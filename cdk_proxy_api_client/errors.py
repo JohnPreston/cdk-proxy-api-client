@@ -19,28 +19,28 @@ class GenericNotFound(ProxyGenericException):
     """Generic option for 404 return code"""
 
     def __init__(self, code, details):
-        super().__init__(details.get("detail", "Resource not found"), code, details)
+        super().__init__(details[0], code, details[1:])
 
 
 class GenericConflict(ProxyGenericException):
     """Generic option for 409 return code"""
 
     def __init__(self, code, details):
-        super().__init__(details.get("detail", "Resources conflict"), code, details)
+        super().__init__(details[0], code, details[1:])
 
 
 class GenericUnauthorized(ProxyGenericException):
     """Generic option for 401 return code"""
 
     def __init__(self, code, details):
-        super().__init__(details.get("detail", "Access unauthorized"), code, details)
+        super().__init__(details[0], code, details[1:])
 
 
 class GenericForbidden(ProxyGenericException):
     """Generic exception for a 403"""
 
     def __init__(self, code, details):
-        super().__init__(details.get("detail", "403 Forbidden"), code, details)
+        super().__init__(details[0], code, details[1:])
 
 
 class ProxyApiException(ProxyGenericException):
@@ -53,7 +53,7 @@ class ProxyApiException(ProxyGenericException):
             raise GenericUnauthorized(code, details)
         elif code == 403:
             raise GenericForbidden(code, details)
-        super().__init__("Something was wrong with the client request.", code, details)
+        super().__init__(details[0], code, details[1])
 
 
 def evaluate_api_return(function):
@@ -65,12 +65,16 @@ def evaluate_api_return(function):
         """
         Decorator wrapper
         """
+        print(args[0:2])
         try:
             payload = function(*args, **kwargs)
             if payload.status_code not in [200, 201, 202, 204] and not KEYISSET(
                 "ignore_failure", kwargs
             ):
-                details = payload.json()
+                try:
+                    details = (args[0:2], payload.json())
+                except req_exceptions.JSONDecodeError:
+                    details = (args[0:2], payload.text)
                 raise ProxyApiException(payload.status_code, details)
 
             elif KEYISSET("ignore_failure", kwargs):

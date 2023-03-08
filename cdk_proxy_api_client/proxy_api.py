@@ -2,7 +2,12 @@
 #   Copyright 2023 John Mille <john@ews-network.net>
 
 
+from typing import TYPE_CHECKING, Union
+
 from cdk_proxy_api_client.client_wrapper import ApiClient
+
+if TYPE_CHECKING:
+    from requests import Response
 
 
 class ProxyClient:
@@ -37,7 +42,7 @@ class ApiApplication:
 
 
 class ProxyAuth(ApiApplication):
-    app_path: str = "auth"
+    app_path: str = "admin/auth"
 
     @classmethod
     def change_version(cls, version: str):
@@ -48,44 +53,34 @@ class ProxyAuth(ApiApplication):
         tenant_id: str,
         token_lifetime_seconds: int = None,
         token_only: bool = False,
-    ):
-        if token_lifetime_seconds:
-            payload: dict = {"lifeTimeSeconds": token_lifetime_seconds}
-            req = self.proxy.client.post(f"{self.base_path}/{tenant_id}", json=payload)
-        else:
-            req = self.proxy.client.post(f"{self.base_path}/{tenant_id}")
+    ) -> Union[Response, str]:
+        payload: dict = {
+            "lifeTimeSeconds": token_lifetime_seconds if token_lifetime_seconds else 900
+        }
+        req = self.proxy.client.post(
+            f"{self.base_path}/tenants/{tenant_id}",
+            json=payload,
+            headers=self.proxy.client.json_headers,
+        )
         if token_only:
-            return req["token"]
+            return req.json()["token"]
         return req
 
 
 class Multitenancy(ApiApplication):
-    app_path: str = "multitenancy"
+    app_path: str = "admin/multitenancy"
 
-    def list_tenants(self) -> list[str]:
-        req = self.proxy.client.get(f"{self.app_path}/tenants")
+    def list_tenants(self, as_list: bool = False) -> Union[Response, list[str]]:
+        _path: str = f"{self.base_path}/tenants"
+        print("list_tenants path", _path)
+        req = self.proxy.client.get(_path, headers={"Accept": "application/json"})
+        if as_list:
+            return req.json()
         return req
 
 
 class TenantMappings(ApiApplication):
-    app_path: str = f"{Multitenancy.app_path}/"
-
-    def list_tenant_topics_mappings(self, tenant_id: str) -> list[dict]:
-        req = self.proxy.client.get(
-            f"{self.app_path}/tenants/{tenant_id}",
-            headers={"Accept": "application/json"},
-        )
-        return req
-
-    def delete_all_tenant_topics_mappings(self, tenant_id: str):
-        req = self.proxy.client.delete(f"{self.app_path}/tenants/{tenant_id}")
-
-    def delete_tenant_topic_mapping(
-        self, tenant_id: str, logical_topic_name: str
-    ) -> None:
-        req = self.proxy.client.delete(
-            f"{self.app_path}/tenants/{tenant_id}/topics/{logical_topic_name}"
-        )
+    app_path: str = f"{Multitenancy.app_path}"
 
     def create_tenant_topic_mapping(
         self,
@@ -93,13 +88,43 @@ class TenantMappings(ApiApplication):
         logical_topic_name: str,
         physical_topic_name: str,
         read_only: bool = False,
-    ):
+    ) -> Response:
         payload: dict = {
             "physicalTopicName": physical_topic_name,
             "readOnly": read_only,
         }
+        _path: str = f"{self.base_path}/tenants/{tenant_id}/topics/{logical_topic_name}"
+        print("create_tenant_topic_mapping path", _path)
         req = self.proxy.client.post(
-            f"{self.app_path}/tenants/{tenant_id}/topics/{logical_topic_name}",
+            _path,
             headers=self.proxy.client.json_headers,
             json=payload,
         )
+        return req
+
+    def list_tenant_topics_mappings(
+        self, tenant_id: str, as_list: bool = False
+    ) -> Union[Response, list[dict]]:
+        _path: str = f"{self.base_path}/tenants/{tenant_id}/topics"
+        print("list_tenant_topics_mappings path", _path)
+        req = self.proxy.client.get(
+            _path,
+            headers={"Accept": "application/json"},
+        )
+        if as_list:
+            return req.json()
+        return req
+
+    def delete_all_tenant_topics_mappings(self, tenant_id: str) -> Response:
+        _path: str = f"{self.base_path}/tenants/{tenant_id}"
+        print("delete_all_tenant_topics_mappings path", _path)
+        req = self.proxy.client.delete(_path)
+        return req
+
+    def delete_tenant_topic_mapping(
+        self, tenant_id: str, logical_topic_name: str
+    ) -> Response:
+        _path: str = f"{self.base_path}/tenants/{tenant_id}/topics/{logical_topic_name}"
+        print("delete_tenant_topic_mapping path", _path)
+        req = self.proxy.client.delete(_path)
+        return req

@@ -89,65 +89,43 @@ class ApiClient:
         return self.url
 
     @evaluate_api_return
-    def get_raw(self, query_path, **kwargs) -> Response:
+    def get(self, query_path, **kwargs) -> Response:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = get(
-            url, auth=self.auth, headers=self.headers, verify=self.verify_ssl, **kwargs
-        )
+        req = get(url, auth=self.auth, verify=self.verify_ssl, **kwargs)
         return req
 
-    def get(self, query_path, **kwargs):
-        req = self.get_raw(query_path, **kwargs)
-        return req.json()
-
     @evaluate_api_return
-    def post_raw(self, query_path, **kwargs) -> Response:
+    def post(self, query_path, **kwargs) -> Response:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
         req = post(
             url,
             auth=self.auth,
-            headers=self.headers,
             verify=self.verify_ssl,
             **kwargs,
         )
         return req
 
-    def post(self, query_path, **kwargs):
-        req = self.post_raw(query_path, **kwargs)
-        return req.json()
-
     @evaluate_api_return
-    def put_raw(self, query_path, **kwargs) -> Response:
+    def put(self, query_path, **kwargs) -> Response:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
         req = put(
             url,
             auth=self.auth,
-            headers=self.headers,
             verify=self.verify_ssl,
             **kwargs,
         )
         return req
 
-    def put(self, query_path, **kwargs):
-        req = self.put_raw(query_path, **kwargs)
-        return req.json()
-
     @evaluate_api_return
-    def delete_raw(self, query_path, **kwargs) -> Response:
+    def delete(self, query_path, **kwargs) -> Response:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = delete(
-            url, auth=self.auth, headers=self.headers, verify=self.verify_ssl, **kwargs
-        )
+        req = delete(url, auth=self.auth, verify=self.verify_ssl, **kwargs)
         return req
-
-    def delete(self, query_path):
-        req = self.delete_raw(query_path)
-        return req.json()
