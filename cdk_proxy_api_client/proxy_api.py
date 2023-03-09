@@ -44,10 +44,6 @@ class ApiApplication:
 class ProxyAuth(ApiApplication):
     app_path: str = "admin/auth"
 
-    @classmethod
-    def change_version(cls, version: str):
-        ProxyAuth.version = version
-
     def create_tenant_credentials(
         self,
         tenant_id: str,
