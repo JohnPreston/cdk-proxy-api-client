@@ -1,6 +1,7 @@
 #   SPDX-License-Identifier: Apache-2.0
 #   Copyright 2023 John Mille <john@ews-network.net>
 
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
