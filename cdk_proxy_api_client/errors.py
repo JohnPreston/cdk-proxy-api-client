@@ -19,28 +19,40 @@ class GenericNotFound(ProxyGenericException):
     """Generic option for 404 return code"""
 
     def __init__(self, code, details):
-        super().__init__(details[0], code, details[1:])
+        if isinstance(details[0], str):
+            super().__init__(details[0], code, details[1:])
+        else:
+            super().__init__(details, code, details[1:])
 
 
 class GenericConflict(ProxyGenericException):
     """Generic option for 409 return code"""
 
     def __init__(self, code, details):
-        super().__init__(details[0], code, details[1:])
+        if isinstance(details[0], str):
+            super().__init__(details[0], code, details[1:])
+        else:
+            super().__init__(details, code, details[1:])
 
 
 class GenericUnauthorized(ProxyGenericException):
     """Generic option for 401 return code"""
 
     def __init__(self, code, details):
-        super().__init__(details[0], code, details[1:])
+        if isinstance(details[0], str):
+            super().__init__(details[0], code, details[1:])
+        else:
+            super().__init__(details, code, details[1:])
 
 
 class GenericForbidden(ProxyGenericException):
     """Generic exception for a 403"""
 
     def __init__(self, code, details):
-        super().__init__(details[0], code, details[1:])
+        if isinstance(details[0], str):
+            super().__init__(details[0], code, details[1:])
+        else:
+            super().__init__(details, code, details[1:])
 
 
 class ProxyApiException(ProxyGenericException):
@@ -65,7 +77,6 @@ def evaluate_api_return(function):
         """
         Decorator wrapper
         """
-        print(args[0:2])
         try:
             payload = function(*args, **kwargs)
             if payload.status_code not in [200, 201, 202, 204] and not KEYISSET(
