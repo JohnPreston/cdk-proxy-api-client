@@ -97,3 +97,16 @@ cdk-cli-import-tenant-mappings -f example.config.yaml \
   --password ${PROXY_PASSWORD} \
   --url ${PROXY_URL}
 ```
+
+### cdk-cli-create-tenant-token
+
+Create a new user tenant token
+
+```shell
+cdk-cli-create-tenant-token \
+  --username ${PROXY_USERNAME} \
+  --password ${PROXY_PASSWORD} \
+  --url ${PROXY_URL} \
+  --lifetime-in-seconds 3600  \
+  --tenant-name js-fin-panther-stg
+```
