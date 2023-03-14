@@ -48,8 +48,7 @@ class ApiClient:
         self.username = username
         self.password = password
         self.hostname = hostname
-        print("HOSTNAME", self.hostname)
-        print("URL?", url)
+
         self._url = None
         self._port = None
         self._protocol = "http"
@@ -97,7 +96,6 @@ class ApiClient:
 
     @url.setter
     def url(self, value: Union[str, None]):
-        print("URL VALUE?", value)
         if value is None:
             return
         if re.match(r"^https://(.*)$", value):
@@ -106,7 +104,6 @@ class ApiClient:
             print(f"URL Does not contain a protocol. Using default {self.protocol}")
             value = f"{self.protocol}://{value}"
         self._url = value
-        print("URL VALUE?", value, self._url)
 
     @property
     def protocol(self) -> str:
@@ -117,10 +114,7 @@ class ApiClient:
     @protocol.setter
     def protocol(self, value: Union[str, None]) -> None:
         if value is None:
-            if self.url and self.url.find("https") == 0:
-                value = "https"
-            else:
-                value = "http"
+            return
         valid_values: list = ["http", "https", "HTTP", "HTTPS"]
         if value not in valid_values:
             raise ValueError("protocol must be one of", valid_values, "got", value)

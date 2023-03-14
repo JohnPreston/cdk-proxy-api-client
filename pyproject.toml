@@ -19,10 +19,16 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
 ]
 
+include = [
+    "cdk_proxy_api_client/**/*.json",
+]
+
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.28.2"
-
+jsonschema = {version = "^4.17.3", optional = true }
+compose-x-common = {version = "^1.2.8", optional = true }
+importlib-resources = {version = "^5.12.0", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.1.1"
@@ -33,6 +39,14 @@ datamodel-code-generator = "^0.17.1"
 pyupgrade = "^3.3.1"
 pydantic = "^1.10.5"
 tbump = "^6.9.0"
+
+[tool.poetry.extras]
+tools = ["compose-x-common", "importlib-resources", "jsonschema"]
+cli = ["compose-x-common", "importlib-resources", "jsonschema"]
+
+[tool.poetry.scripts]
+cdk-cli-import-tenant-mappings = "cdk_proxy_api_client.tools.tenant_mappings_manager:main"
+
 
 [tool.tbump]
 github_url = "https://codeberg.org/JohnPreston/cdk-proxy-api-client"

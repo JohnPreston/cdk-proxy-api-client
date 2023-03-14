@@ -56,3 +56,44 @@ tenant_mappings_mgmt.delete_tenant_topic_mapping("tenant_name", "logical_name")
 The testing is for now very manual. See ``e2e_testing.py``
 
 Pytest will be added later on
+
+
+## Tools & CLI
+
+To simplify the usage of the client, you can use some CLI tools
+
+### cdk-cli-import-tenant-mappings
+
+```shell
+usage: Create tenant mappings from configuration file [-h] -f MAPPINGS_FILE --username USERNAME --password PASSWORD --url URL [--to-yaml]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f MAPPINGS_FILE, --mappings-file MAPPINGS_FILE
+                        Path to the tenants mappings config file
+  --username USERNAME
+  --password PASSWORD
+  --url URL
+  --to-yaml             Output the mappings in YAML
+```
+
+example file:
+
+```yaml
+---
+# example.config.yaml
+
+tenant_name: application-01
+ignore_duplicates_conflict: true
+mappings:
+  - logicalTopicName: data.stock
+    physicalTopicName: data.stock
+    readOnly: true
+```
+
+```shell
+cdk-cli-import-tenant-mappings -f example.config.yaml \
+  --username ${PROXY_USERNAME} \
+  --password ${PROXY_PASSWORD} \
+  --url ${PROXY_URL}
+```

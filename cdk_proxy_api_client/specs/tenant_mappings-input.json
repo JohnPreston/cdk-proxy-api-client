@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "tenant_mappings-input.spec.json",
+  "$id": "tenant_mappings-input.spec.json",
+  "title": "Tenant Mappings config input schema",
+  "description": "Specification for tenant mapping management",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "tenant_name": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_\\-\\.]+$"
+    },
+    "ignore_duplicates_conflict": {
+      "type": "boolean",
+      "description": "If true, ignores 409 conflict errors when applying a new mapping."
+    },
+    "mappings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/TenantMapping"
+      }
+    }
+  },
+  "definitions": {
+    "TenantMapping": {
+      "description": "Tenant mapping as defined in the API definition",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "logicalTopicName": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "physicalTopicName": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "readOnly": {
+          "type": "boolean",
+          "description": "Whether the mapping is read-only on the topic. Cannot produce on topic."
+        }
+      }
+    }
+  }
+}
