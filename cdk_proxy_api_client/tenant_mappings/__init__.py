@@ -61,7 +61,7 @@ class TenantMappings(ApiApplication):
 
     def delete_all_tenant_topics_mappings(self, tenant_id: str) -> Response:
         """Deletes all the topic mappings for a given tenant"""
-        _path: str = f"{self.base_path}/tenants/{tenant_id}"
+        _path: str = f"{self.base_path}/tenants/{tenant_id}/topics"
         print("delete_all_tenant_topics_mappings path", _path)
         try:
             req = self.proxy.client.delete(_path)

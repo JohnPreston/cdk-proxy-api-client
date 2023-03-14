@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from requests import Response
@@ -43,57 +43,116 @@ class ApiClient:
         :param str username: Username used for basic auth
         :param str password: Password used for basic auth
         """
-        self.hostname = hostname
-        self.protocol = protocol if protocol else "http"
-        self.verify_ssl = not ignore_ssl_errors
-        self.port = port if port else 8083
+        if (username and not password) or (password and not username):
+            raise ValueError("You must specify both username and password")
         self.username = username
         self.password = password
+        self.hostname = hostname
+        print("HOSTNAME", self.hostname)
+        print("URL?", url)
+        self._url = None
+        self._port = None
+        self._protocol = "http"
+        self._ignore_ssl_errors = ignore_ssl_errors
 
-        if self.protocol not in ["http", "https"]:
-            raise ValueError("protocol must be one of", ["http", "https"])
-        if (self.port < 0) or (self.port > (2**16)):
-            raise ValueError(
-                f"Port {self.port} is not valid. Must be between 0 and {((2 ** 16) - 1)}"
-            )
-        if self.username and not self.password or self.password and not self.username:
-            raise ValueError("You must specify both username and password")
-        if self.verify_ssl is True and self.protocol == "http":
-            print("No SSL needed for HTTP without TLS. Disabling")
-            self.verify_ssl = False
-        if url:
-            self.url = url
-            if not re.match(r"(http://|https://)", self.url):
-                print(f"URL Does not contain a protocol. Using default {self.protocol}")
-                self.url = f"{self.protocol}://{self.url}"
-            print("URL Defined from parameter. Skipping hostname:port parameters")
-        elif (self.port == 80 and protocol == "http") or (
-            self.port == 443 and self.protocol == "https"
-        ):
-            self.url = f"{self.protocol}://{self.hostname}"
-        else:
-            self.url = f"{self.protocol}://{self.hostname}:{self.port}"
-
-        self.auth = (
-            HTTPBasicAuth(self.username, self.password)
-            if self.username and self.password
-            else None
-        )
-
-        self.headers = {
-            # "Content-type": "application/json",
-            # "Accept": "application/json",
-        }
+        self.protocol = protocol
+        self.port = port
+        self.url = url
 
     def __repr__(self):
         return self.url
+
+    @property
+    def verify_ssl(self) -> bool:
+        if not self._ignore_ssl_errors and self.protocol == "http":
+            return False
+        return not self._ignore_ssl_errors
+
+    @property
+    def basic_auth(self) -> Union[HTTPBasicAuth, None]:
+        """Returns basic auth information. If both the username and password are not set, raises AttributeError"""
+        if self.username and self.password:
+            return HTTPBasicAuth(self.username, self.password)
+        if (self.username and not self.password) or (
+            self.password and not self.username
+        ):
+            raise AttributeError("You must specify both username and password")
+        return None
+
+    @property
+    def url(self) -> str:
+        if self._url:
+            return self._url
+        elif self.hostname:
+            if (self.port == 80 and self.protocol == "http") or (
+                self.port == 443 and self.protocol == "https"
+            ):
+                return f"{self.protocol}://{self.hostname}"
+            else:
+                return f"{self.protocol}://{self.hostname}:{self.port}"
+        else:
+            raise AttributeError(
+                "Unable to form a URL", self._url, self.hostname, self.port
+            )
+
+    @url.setter
+    def url(self, value: Union[str, None]):
+        print("URL VALUE?", value)
+        if value is None:
+            return
+        if re.match(r"^https://(.*)$", value):
+            self.protocol = "https"
+        elif not re.match(r"(http://|https://)", value):
+            print(f"URL Does not contain a protocol. Using default {self.protocol}")
+            value = f"{self.protocol}://{value}"
+        self._url = value
+        print("URL VALUE?", value, self._url)
+
+    @property
+    def protocol(self) -> str:
+        if self._protocol:
+            return self._protocol
+        return "http"
+
+    @protocol.setter
+    def protocol(self, value: Union[str, None]) -> None:
+        if value is None:
+            if self.url and self.url.find("https") == 0:
+                value = "https"
+            else:
+                value = "http"
+        valid_values: list = ["http", "https", "HTTP", "HTTPS"]
+        if value not in valid_values:
+            raise ValueError("protocol must be one of", valid_values, "got", value)
+        self._protocol = value.lower()
+
+    @property
+    def port(self) -> int:
+        if self._port:
+            return self._port
+        return 80
+
+    @port.setter
+    def port(self, value: Union[int, None]) -> None:
+        if value is None and self.protocol == "http":
+            value = 80
+        elif value is None and self.protocol == "https":
+            value = 443
+        elif isinstance(value, str):
+            value = int(value)
+
+        if (value < 0) or (value > (2**16)):
+            raise ValueError(
+                f"Port {self.port} is not valid. Must be between 0 and {((2 ** 16) - 1)}"
+            )
+        self._port = value
 
     @evaluate_api_return
     def get(self, query_path, **kwargs) -> Response:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = get(url, auth=self.auth, verify=self.verify_ssl, **kwargs)
+        req = get(url, auth=self.basic_auth, verify=self.verify_ssl, **kwargs)
         return req
 
     @evaluate_api_return
@@ -103,7 +162,7 @@ class ApiClient:
         url = f"{self.url}{query_path}"
         req = post(
             url,
-            auth=self.auth,
+            auth=self.basic_auth,
             verify=self.verify_ssl,
             **kwargs,
         )
@@ -116,7 +175,7 @@ class ApiClient:
         url = f"{self.url}{query_path}"
         req = put(
             url,
-            auth=self.auth,
+            auth=self.basic_auth,
             verify=self.verify_ssl,
             **kwargs,
         )
@@ -127,5 +186,5 @@ class ApiClient:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = delete(url, auth=self.auth, verify=self.verify_ssl, **kwargs)
+        req = delete(url, auth=self.basic_auth, verify=self.verify_ssl, **kwargs)
         return req
