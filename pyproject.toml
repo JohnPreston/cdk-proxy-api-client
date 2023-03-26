@@ -23,6 +23,13 @@ include = [
     "cdk_proxy_api_client/**/*.json",
 ]
 
+exclude = ["*.pyc", "*~", "*pycache*"]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/JohnPreston/cdk-proxy-api-client/issues"
+"Source (GitHub)" = "https://github.com/JohnPreston/cdk-proxy-api-client"
+"Source (CodeBerg)" = "https://codeberg.org/JohnPreston/cdk-proxy-api-client"
+
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.28.2"
