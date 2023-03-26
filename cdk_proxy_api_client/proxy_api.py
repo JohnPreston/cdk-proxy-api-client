@@ -50,5 +50,5 @@ class Multitenancy(ApiApplication):
         print("list_tenants path", _path)
         req = self.proxy.client.get(_path, headers={"Accept": "application/json"})
         if as_list:
-            return req.json()
+            return req.json()["tenants"]
         return req
