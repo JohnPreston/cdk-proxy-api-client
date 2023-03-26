@@ -45,10 +45,7 @@ tools = ["compose-x-common", "importlib-resources", "jsonschema"]
 cli = ["compose-x-common", "importlib-resources", "jsonschema"]
 
 [tool.poetry.scripts]
-cdk-cli-import-tenant-mappings = "cdk_proxy_api_client.tools.tenant_mappings_manager:main"
-cdk-cli-create-tenant-token = "cdk_proxy_api_client.tools.create_tenant_token:main"
-cdk-cli-list-tenants = "cdk_proxy_api_client.tools.list_tenants:list_tenants"
-cdk-cli-list-tenant-mappings = "cdk_proxy_api_client.tools.list_tenants:list_tenant_mappings"
+cdk-cli = "cdk_proxy_api_client.cli:main"
 
 
 [tool.tbump]

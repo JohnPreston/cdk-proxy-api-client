@@ -17,6 +17,7 @@ from os import path
 
 
 def load_config_file(file_path: str) -> Union[dict, list]:
+    """Simple function to load a file and return dict/list, the best effort to use YAML or JSON. If neither, fails."""
     with open(path.abspath(file_path)) as file_fd:
         content = file_fd.read()
 

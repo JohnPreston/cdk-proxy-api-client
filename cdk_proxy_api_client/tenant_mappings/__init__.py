@@ -8,6 +8,7 @@ from typing import Union
 
 from requests import Response
 
+from cdk_proxy_api_client.common.logging import LOG
 from cdk_proxy_api_client.errors import GenericNotFound
 from cdk_proxy_api_client.proxy_api import ApiApplication, Multitenancy
 from cdk_proxy_api_client.tenant_mappings.exceptions import (
@@ -16,7 +17,7 @@ from cdk_proxy_api_client.tenant_mappings.exceptions import (
 )
 
 
-class TenantMappings(ApiApplication):
+class TenantTopicMappings(ApiApplication):
     """Manage admin/multitenancy tenancy topics mappings"""
 
     app_path: str = f"{Multitenancy.app_path}"
@@ -34,7 +35,7 @@ class TenantMappings(ApiApplication):
             "readOnly": read_only,
         }
         _path: str = f"{self.base_path}/tenants/{tenant_id}/topics/{logical_topic_name}"
-        print("create_tenant_topic_mapping path", _path)
+        LOG.debug(f"create_tenant_topic_mapping path {_path}")
         req = self.proxy.client.post(
             _path,
             headers=self.proxy.client.json_headers,
@@ -47,7 +48,7 @@ class TenantMappings(ApiApplication):
     ) -> Union[Response, list[dict]]:
         """Lists all the tenant topic mappings"""
         _path: str = f"{self.base_path}/tenants/{tenant_id}/topics"
-        print("list_tenant_topics_mappings path", _path)
+        LOG.debug(f"list_tenant_topics_mappings path {_path}")
         try:
             req = self.proxy.client.get(
                 _path,
@@ -62,7 +63,7 @@ class TenantMappings(ApiApplication):
     def delete_all_tenant_topics_mappings(self, tenant_id: str) -> Response:
         """Deletes all the topic mappings for a given tenant"""
         _path: str = f"{self.base_path}/tenants/{tenant_id}/topics"
-        print("delete_all_tenant_topics_mappings path", _path)
+        LOG.debug(f"delete_all_tenant_topics_mappings path {_path}")
         try:
             req = self.proxy.client.delete(_path)
             return req
@@ -74,7 +75,7 @@ class TenantMappings(ApiApplication):
     ) -> Response:
         """Deletes a specific topic mapping for a given tenant"""
         _path: str = f"{self.base_path}/tenants/{tenant_id}/topics/{logical_topic_name}"
-        print("delete_tenant_topic_mapping path", _path)
+        LOG.debug(f"delete_tenant_topic_mapping path {_path}")
         try:
             req = self.proxy.client.delete(_path)
             return req

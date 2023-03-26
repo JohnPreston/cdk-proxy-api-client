@@ -43,9 +43,9 @@ tenants = tenants_mgmt.list_tenants(as_list=True)
 * Delete all topic mappings for a tenant
 
 ```python
-from cdk_proxy_api_client.tenant_mappings import TenantMappings
+from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
 
-tenant_mappings_mgmt = TenantMappings(proxy_client)
+tenant_mappings_mgmt = TenantTopicMappings(proxy_client)
 tenant_mappings_mgmt.create_tenant_topic_mapping(
     "tenant_name", "logical_name", "real_name"
 )
@@ -60,22 +60,54 @@ Pytest will be added later on
 
 ## Tools & CLI
 
-To simplify the usage of the client, you can use some CLI tools
-
-### cdk-cli-import-tenant-mappings
+To simplify the usage of the client, you can use some CLI commands
 
 ```shell
-usage: Create tenant mappings from configuration file [-h] -f MAPPINGS_FILE --username USERNAME --password PASSWORD --url URL [--to-yaml]
+usage: CDK Proxy CLI [-h] [--format OUTPUT_FORMAT] --username USERNAME --password PASSWORD --url URL {auth,tenant-topic-mappings,tenants} ...
+
+positional arguments:
+  {auth,tenant-topic-mappings,tenants}
+                        Resources to manage
+    auth                Manages proxy tenant token
+    tenant-topic-mappings
+                        Manages tenant mappings
+    tenants             Manage tenants
 
 optional arguments:
   -h, --help            show this help message and exit
-  -f MAPPINGS_FILE, --mappings-file MAPPINGS_FILE
-                        Path to the tenants mappings config file
+  --format OUTPUT_FORMAT, --output-format OUTPUT_FORMAT
+                        output format
   --username USERNAME
   --password PASSWORD
   --url URL
-  --to-yaml             Output the mappings in YAML
+
 ```
+
+### cdk-cli tenant-topic-mappings
+
+```shell
+usage: CDK Proxy CLI tenant-topic-mappings [-h] {list,create,import-from-tenants-config,import-from-tenant,delete-all-mappings,delete-topic-mapping} ...
+
+positional arguments:
+  {list,create,import-from-tenants-config,import-from-tenant,delete-all-mappings,delete-topic-mapping}
+                        Mappings management
+    list                List tenant mappings
+    create              Create a new tenant mapping
+    import-from-tenants-config
+                        Create topic mappings from existing tenants
+    import-from-tenant  Import all topics from a existing tenant
+    delete-all-mappings
+                        Delete all topics mappings for a given tenant
+    delete-topic-mapping
+                        Delete a topic mapping for a given tenant
+
+optional arguments:
+  -h, --help            show this help message and exit
+```
+
+#### import-from-tenants-config
+
+This command uses a configuration file that will be used to propagate mappings from one/multiple existing tenants to another.
 
 example file:
 
@@ -92,21 +124,52 @@ mappings:
 ```
 
 ```shell
-cdk-cli-import-tenant-mappings -f example.config.yaml \
-  --username ${PROXY_USERNAME} \
-  --password ${PROXY_PASSWORD} \
-  --url ${PROXY_URL}
+cdk-cli --username ${PROXY_USERNAME} \
+        --password ${PROXY_PASSWORD} \
+        --url ${PROXY_URL} \
+        tenant-topic-mappings import-from-tenants-config -f example.config.yaml
 ```
 
-### cdk-cli-create-tenant-token
+### cdk-cli auth
+
+```shell
+cdk-cli auth --help
+usage: CDK Proxy CLI auth [-h] {create} ...
+
+positional arguments:
+  {create}    Token actions to execute
+    create    Create a new tenant proxy JWT Token
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
+
+#### cdk-cli-create-tenant-token
 
 Create a new user tenant token
 
 ```shell
-cdk-cli-create-tenant-token \
-  --username ${PROXY_USERNAME} \
-  --password ${PROXY_PASSWORD} \
-  --url ${PROXY_URL} \
-  --lifetime-in-seconds 3600  \
-  --tenant-name js-fin-panther-stg
+cdk-cli \
+        --username ${PROXY_USERNAME} \
+        --password ${PROXY_PASSWORD} \
+        --url ${PROXY_URL} \
+        auth create \
+        --lifetime-in-seconds 3600  \
+        --tenant-name js-fin-panther-stg
+```
+
+### cdk-cli tenants
+
+Manage tenants
+
+```shell
+cdk-cli tenants --help
+usage: CDK Proxy CLI tenants [-h] {list} ...
+
+positional arguments:
+  {list}      Manage tenants
+    list      List tenants
+
+optional arguments:
+  -h, --help  show this help message and exit
 ```

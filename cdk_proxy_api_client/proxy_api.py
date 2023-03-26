@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union
 
 from cdk_proxy_api_client.client_wrapper import ApiClient
+from cdk_proxy_api_client.common.logging import LOG
 
 if TYPE_CHECKING:
     from requests import Response
@@ -47,7 +48,7 @@ class Multitenancy(ApiApplication):
 
     def list_tenants(self, as_list: bool = False) -> Union[Response, list[str]]:
         _path: str = f"{self.base_path}/tenants"
-        print("list_tenants path", _path)
+        LOG.debug(f"list_tenants path {_path}")
         req = self.proxy.client.get(_path, headers={"Accept": "application/json"})
         if as_list:
             return req.json()["tenants"]

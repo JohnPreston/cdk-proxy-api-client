@@ -24,7 +24,7 @@ from jsonschema import validate
 
 from cdk_proxy_api_client.errors import ProxyGenericException
 from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
-from cdk_proxy_api_client.tenant_mappings import TenantMappings
+from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
 
 DEFAULT_SCHEMA_PATH = pkg_files("cdk_proxy_api_client").joinpath(
     "specs/tenant_mappings-input.json"
@@ -41,7 +41,7 @@ def get_tenant_logical_topics(
     :param bool include_read_only:
     :return: List of topics logical available in the tenant.
     """
-    tenant_mappings = TenantMappings(proxy)
+    tenant_mappings = TenantTopicMappings(proxy)
 
     topics_list: list[dict] = []
     for _topic in tenant_mappings.list_tenant_topics_mappings(
@@ -68,8 +68,7 @@ def import_from_tenants_include_string(
         print(error)
         print(include_regex, "Not a valid regex")
         return
-    tenant_mappings = TenantMappings(proxy)
-    print("PROCESSED TENANTS?", processed_tenants, "TENANTS", tenants)
+    tenant_mappings = TenantTopicMappings(proxy)
     for _tenant in tenants:
         if _pattern.match(_tenant):
             if process_once and _tenant in processed_tenants:
@@ -79,7 +78,6 @@ def import_from_tenants_include_string(
                 )
                 continue
             else:
-                print("_TENANT?", _tenant)
                 tenant_topics: list[dict] = get_tenant_logical_topics(proxy, _tenant)
                 for _import_tenant_topic in tenant_topics:
                     tenant_mappings.create_tenant_topic_mapping(
@@ -139,7 +137,7 @@ def import_from_tenants_include_dict(
                 )
                 return
 
-    tenant_mappings = TenantMappings(proxy)
+    tenant_mappings = TenantTopicMappings(proxy)
     for _tenant in tenants:
         if _pattern.match(_tenant):
             if process_once and _tenant in processed_tenants:
@@ -189,7 +187,6 @@ def import_from_other_tenants(
 ) -> None:
     """Allows to import existing topics from other tenants in read-only"""
     tenants: list[str] = Multitenancy(proxy).list_tenants(as_list=True)
-    print("Tenants?", type(tenants))
     exclude_list = set_else_none("exclude_regex", import_config, [])
     include_list = set_else_none("include_regex", import_config, [])
     processed_tenants: list[str] = []
@@ -236,7 +233,7 @@ def import_from_other_tenants(
 
 
 def propagate_tenant_mappings(
-    tenant_mappings: TenantMappings,
+    tenant_mappings: TenantTopicMappings,
     mappings: list[dict],
     tenant_name: str,
     ignore_conflicts: bool = False,
@@ -254,17 +251,17 @@ def propagate_tenant_mappings(
                 pass
 
 
-def mappings_manager(
-    client: ProxyClient, config_content: dict, schema: dict = None
+def import_tenants_mappings(
+    client: ProxyClient, config_content: dict, tenant_name: str, schema: dict = None
 ) -> list[dict]:
     """Will create mappings from the config content, and return the final mappings for the tenant"""
     if not schema:
         schema = loads(DEFAULT_SCHEMA_PATH.read_text())
     validate(config_content, schema)
-    tenant_name = config_content["tenant_name"]
+    tenant_name = set_else_none("tenant_name", config_content, tenant_name)
     ignore_conflicts = keyisset("ignore_duplicates_conflict", config_content)
     mappings = config_content["mappings"]
-    tenant_mappings = TenantMappings(client)
+    tenant_mappings = TenantTopicMappings(client)
     propagate_tenant_mappings(tenant_mappings, mappings, tenant_name, ignore_conflicts)
     import_from_other_tenants_config = set_else_none(
         "import_from_tenant", config_content
@@ -273,37 +270,3 @@ def mappings_manager(
         import_from_other_tenants(client, import_from_other_tenants_config, tenant_name)
 
     return tenant_mappings.list_tenant_topics_mappings(tenant_name, True)
-
-
-def main():
-    from argparse import ArgumentParser
-    from json import dumps
-
-    from cdk_proxy_api_client.tools import load_config_file
-
-    _parser = ArgumentParser("Create tenant mappings from configuration file")
-    _parser.add_argument(
-        "-f",
-        "--mappings-file",
-        help="Path to the tenants mappings config file",
-        required=True,
-    )
-    _parser.add_argument("--username", required=True)
-    _parser.add_argument("--password", required=True)
-    _parser.add_argument("--url", required=True, default=None)
-    _parser.add_argument(
-        "--to-yaml", action="store_true", help="Output the mappings in YAML"
-    )
-    _args = _parser.parse_args()
-    _content = load_config_file(_args.mappings_file)
-    _client = ApiClient(username=_args.username, password=_args.password, url=_args.url)
-    _proxy = ProxyClient(_client)
-    _MAPPINGS = mappings_manager(_proxy, _content)
-    if _args.to_yaml:
-        print(yaml.dump(_MAPPINGS, Dumper=Dumper))
-    else:
-        print(dumps(_MAPPINGS, indent=2))
-
-
-if __name__ == "__main__":
-    sys.exit(main())

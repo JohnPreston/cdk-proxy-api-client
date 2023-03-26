@@ -8,7 +8,7 @@ import json
 from argparse import Action, ArgumentParser
 
 from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
-from cdk_proxy_api_client.tenant_mappings import TenantMappings
+from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
 from cdk_proxy_api_client.tenant_mappings import (
     exceptions as tenant_mappings_exceptions,
 )
@@ -34,7 +34,7 @@ def test_all(
     multi = Multitenancy(pxy)
     print("Initial tenants", multi.list_tenants().json())
 
-    tenants_mappings = TenantMappings(pxy)
+    tenants_mappings = TenantTopicMappings(pxy)
 
     try:
         print(

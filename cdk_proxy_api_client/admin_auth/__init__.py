@@ -7,6 +7,7 @@ from typing import Union
 
 from requests import Response
 
+from cdk_proxy_api_client.common.logging import LOG
 from cdk_proxy_api_client.proxy_api import ApiApplication
 
 
@@ -25,8 +26,10 @@ class AdminAuth(ApiApplication):
         payload: dict = {
             "lifeTimeSeconds": token_lifetime_seconds if token_lifetime_seconds else 900
         }
+        _path: str = f"{self.base_path}/tenants/{tenant_id}"
+        LOG.debug(f"create_tenant_credentials path {_path}")
         req = self.proxy.client.post(
-            f"{self.base_path}/tenants/{tenant_id}",
+            _path,
             json=payload,
             headers=self.proxy.client.json_headers,
         )
