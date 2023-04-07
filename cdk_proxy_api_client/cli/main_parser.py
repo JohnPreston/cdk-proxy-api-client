@@ -46,7 +46,6 @@ def set_tenant_mappings_subparsers(mappings_parser: ArgumentParser):
     import_from_tenants_parser = mappings_subparser.add_parser(
         name="import-from-tenants-config",
         help="Create topic mappings from existing tenants",
-        parents=[TENANT_PARSER],
     )
     import_from_tenants_parser.add_argument(
         "-f",

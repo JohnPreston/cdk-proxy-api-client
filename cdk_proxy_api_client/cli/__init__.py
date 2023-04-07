@@ -15,6 +15,8 @@ try:
 except ImportError:
     from yaml import CDumper as Dumper
 
+from compose_x_common.compose_x_common import set_else_none
+
 from cdk_proxy_api_client.admin_auth import AdminAuth
 from cdk_proxy_api_client.cli.main_parser import set_parser
 from cdk_proxy_api_client.common.logging import LOG
@@ -50,7 +52,7 @@ def tenants_actions(proxy: ProxyClient, action: str, **kwargs):
 def tenant_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
     """Manages actions for TenantMappings"""
     tenants_mappings = TenantTopicMappings(proxy)
-    tenant_name = kwargs.pop("tenant_name")
+    tenant_name = set_else_none("tenant_name", kwargs)
     if action == "list":
         return tenants_mappings.list_tenant_topics_mappings(tenant_name).json()
     elif action == "import-from-tenants-config":

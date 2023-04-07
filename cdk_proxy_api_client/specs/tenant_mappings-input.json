@@ -82,6 +82,11 @@
               "type": "string",
               "description": "Optional - When creating the mapping, adds a prefix to the logical topic name"
             },
+            "grant_write_access": {
+              "type": "boolean",
+              "description": "On import, matched topics will be available in the tenant with write access. NOT RECOMMENDED",
+              "default": false
+            },
             "logical_topics_include_regexes": {
               "type": "array",
               "uniqueItems": true,
