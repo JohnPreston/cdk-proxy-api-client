@@ -96,6 +96,29 @@ def set_tenant_mappings_subparsers(mappings_parser: ArgumentParser):
     )
 
 
+def set_tenant_concentration_mappings_subparsers(
+    concentration_mappings_parser: ArgumentParser,
+):
+    mappings_subparser = concentration_mappings_parser.add_subparsers(
+        dest="action", help="Concentrated mappings management"
+    )
+    create_parser = mappings_subparser.add_parser(
+        name="create",
+        help="Create a new tenant concentrated mapping",
+        parents=[TENANT_PARSER],
+    )
+    create_parser.add_argument(
+        "--physical-topic-name", type=str, required=True, dest="physicalTopicName"
+    )
+    create_parser.add_argument(
+        "--topics-regex",
+        type=str,
+        required=True,
+        help="Regex of topics to match",
+        dest="topicRegex",
+    )
+
+
 def set_parser():
     main_parser = ArgumentParser("CDK Proxy CLI", add_help=True)
     main_parser.add_argument(
@@ -121,7 +144,11 @@ def set_parser():
     mappings_parser = cmd_parser.add_parser(
         name="tenant-topic-mappings", help="Manages tenant mappings"
     )
+    concentration_parser = cmd_parser.add_parser(
+        name="tenant-concentrated-mappings", help="Manages concentration mappings"
+    )
     set_tenant_mappings_subparsers(mappings_parser)
+    set_tenant_concentration_mappings_subparsers(concentration_parser)
 
     tenants_parser = cmd_parser.add_parser(name="tenants", help="Manage tenants")
     tenants_subparser = tenants_parser.add_subparsers(

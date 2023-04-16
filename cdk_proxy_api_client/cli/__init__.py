@@ -20,6 +20,7 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from cdk_proxy_api_client.admin_auth import AdminAuth
 from cdk_proxy_api_client.cli.main_parser import set_parser
 from cdk_proxy_api_client.common.logging import LOG
+from cdk_proxy_api_client.concentration import TenantContentrationMapping
 from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
 from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
 from cdk_proxy_api_client.tools import load_config_file
@@ -86,6 +87,28 @@ def tenant_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
         tenants_mappings.delete_all_tenant_topics_mappings(tenant_name)
 
 
+def tenant_concentrated_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
+    """
+    Manage concentrated topic mappings.
+    :param proxy:
+    :param action:
+    :param kwargs:
+    :return:
+    """
+    concentration_mgmr = TenantContentrationMapping(proxy)
+    if action == "create":
+        req = concentration_mgmr.create_tenant_concentration(
+            kwargs["tenant_name"],
+            logical_regex=kwargs["topicRegex"],
+            physical_topic_name=kwargs["physicalTopicName"],
+        )
+        try:
+            return req.json()
+        except Exception as error:
+            print(error)
+            return req.text
+
+
 def main():
     _PARSER = set_parser()
     _args = _PARSER.parse_args()
@@ -121,6 +144,7 @@ def main():
         "tenants": tenants_actions,
         "tenant-topic-mappings": tenant_mappings_actions,
         "auth": auth_actions,
+        "tenant-concentrated-mappings": tenant_concentrated_mappings_actions,
     }
     dest_function = _categories_mappings[_category]
     response = dest_function(_proxy, _action, **_vars)

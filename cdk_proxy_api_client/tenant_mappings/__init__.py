@@ -4,9 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
-from requests import Response
+if TYPE_CHECKING:
+    from requests import Response
 
 from cdk_proxy_api_client.common.logging import LOG
 from cdk_proxy_api_client.errors import GenericNotFound
