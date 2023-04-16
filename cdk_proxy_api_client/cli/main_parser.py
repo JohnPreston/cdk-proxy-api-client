@@ -38,10 +38,20 @@ def set_tenant_mappings_subparsers(mappings_parser: ArgumentParser):
         help="List tenant mappings",
         parents=[TENANT_PARSER],
     )
-    mappings_subparser.add_parser(
+    create_parser = mappings_subparser.add_parser(
         name="create",
         help="Create a new tenant mapping",
         parents=[TENANT_PARSER],
+    )
+    create_parser.add_argument("--logical-topic-name", type=str, required=True)
+    create_parser.add_argument("--physical-topic-name", type=str, required=True)
+    create_parser.add_argument(
+        "--read-write",
+        required=False,
+        default=False,
+        dest="ReadWrite",
+        action="store_true",
+        help="Creates mapping in Read-Write (defaults to Read Only)",
     )
     import_from_tenants_parser = mappings_subparser.add_parser(
         name="import-from-tenants-config",

@@ -15,7 +15,7 @@ try:
 except ImportError:
     from yaml import CDumper as Dumper
 
-from compose_x_common.compose_x_common import set_else_none
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from cdk_proxy_api_client.admin_auth import AdminAuth
 from cdk_proxy_api_client.cli.main_parser import set_parser
@@ -59,6 +59,13 @@ def tenant_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
         content = load_config_file(path.abspath(kwargs["import_config_file"]))
         topics_mappings = import_tenants_mappings(proxy, content, tenant_name)
         return topics_mappings
+    elif action == "create":
+        tenants_mappings.create_tenant_topic_mapping(
+            tenant_name,
+            kwargs["logical_topic_name"],
+            kwargs["physical_topic_name"],
+            keyisset("ReadWrite", kwargs),
+        )
     elif action == "import-from-tenant":
         source_tenant = kwargs.pop("source_tenant")
         content = {
@@ -119,10 +126,14 @@ def main():
     response = dest_function(_proxy, _action, **_vars)
     if not response:
         return
-    if _args.output_format == "json":
-        print(json.dumps(response, indent=2))
-    else:
-        print(yaml.dump(response, Dumper=Dumper))
+    try:
+        if _args.output_format == "json":
+            print(json.dumps(response, indent=2))
+        else:
+            print(yaml.dump(response, Dumper=Dumper))
+    except Exception as error:
+        print(error)
+        print(response)
 
 
 if __name__ == "__main__":

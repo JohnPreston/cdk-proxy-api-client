@@ -27,12 +27,12 @@ class TenantTopicMappings(ApiApplication):
         tenant_id: str,
         logical_topic_name: str,
         physical_topic_name: str,
-        read_only: bool = False,
+        read_write: bool = False,
     ) -> Response:
         """Create a new logical to physical topic mapping for tenant"""
         payload: dict = {
             "physicalTopicName": physical_topic_name,
-            "readOnly": read_only,
+            "readOnly": not read_write,
         }
         _path: str = f"{self.base_path}/tenants/{tenant_id}/topics/{logical_topic_name}"
         LOG.debug(f"create_tenant_topic_mapping path {_path}")

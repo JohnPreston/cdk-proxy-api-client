@@ -6,16 +6,7 @@
 from __future__ import annotations
 
 import re
-import sys
 from copy import deepcopy
-
-import yaml
-
-try:
-    from yaml import Dumper
-except ImportError:
-    from yaml import CDumper as Dumper
-
 from json import loads
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
@@ -24,7 +15,7 @@ from jsonschema import validate
 
 from cdk_proxy_api_client.common.logging import LOG
 from cdk_proxy_api_client.errors import ProxyApiException, ProxyGenericException
-from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
+from cdk_proxy_api_client.proxy_api import Multitenancy, ProxyClient
 from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
 
 DEFAULT_SCHEMA_PATH = pkg_files("cdk_proxy_api_client").joinpath(
@@ -85,7 +76,7 @@ def import_from_tenants_include_string(
                         tenant_name,
                         _import_tenant_topic["logicalTopicName"],
                         _import_tenant_topic["physicalTopicName"],
-                        True,
+                        read_write=False,
                     )
                 processed_tenants.append(_tenant)
 
@@ -188,7 +179,7 @@ def import_from_tenants_include_dict(
                     tenant_name,
                     topic_mapping["logicalTopicName"],
                     topic_mapping["physicalTopicName"],
-                    read_only=not grant_write_access,
+                    read_write=grant_write_access,
                 )
                 if grant_write_access:
                     LOG.warn(
@@ -265,7 +256,7 @@ def propagate_tenant_mappings(
                 tenant_name,
                 mapping["logicalTopicName"],
                 mapping["physicalTopicName"],
-                read_only=keyisset("readOnly", mapping),
+                read_write=not keyisset("readOnly", mapping),
             )
         except ProxyGenericException as error:
             if error.code == 409 and ignore_conflicts:
