@@ -117,6 +117,28 @@ def set_tenant_concentration_mappings_subparsers(
         help="Regex of topics to match",
         dest="topicRegex",
     )
+    list_parser = mappings_subparser.add_parser(
+        name="list", help="List topping mappings", parents=[TENANT_PARSER]
+    )
+
+
+def set_tenant_topics_subparsers(
+    concentration_mappings_parser: ArgumentParser,
+):
+    mappings_subparser = concentration_mappings_parser.add_subparsers(
+        dest="action", help="Concentrated mappings management"
+    )
+    list_parser = mappings_subparser.add_parser(
+        name="list", help="List topping mappings", parents=[TENANT_PARSER]
+    )
+    get_topic_parser = mappings_subparser.add_parser(
+        name="get-topic",
+        help="Get topic configuration for tenant",
+        parents=[TENANT_PARSER],
+    )
+    get_topic_parser.add_argument(
+        "--logical-topic-name", required=True, dest="logicalTopicName"
+    )
 
 
 def set_parser():
@@ -147,6 +169,8 @@ def set_parser():
     concentration_parser = cmd_parser.add_parser(
         name="tenant-concentrated-mappings", help="Manages concentration mappings"
     )
+    tenant_topics_subparser = cmd_parser.add_parser(name="tenant-topics")
+    set_tenant_topics_subparsers(tenant_topics_subparser)
     set_tenant_mappings_subparsers(mappings_parser)
     set_tenant_concentration_mappings_subparsers(concentration_parser)
 

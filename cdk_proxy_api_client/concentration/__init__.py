@@ -46,3 +46,31 @@ class TenantContentrationMapping(ApiApplication):
             _path, headers=self.proxy.client.json_headers, json=payload
         )
         return req
+
+    def delete_concentration_mapping(self, tenant_id: str, logical_regex: str):
+        _path: str = f"{self.base_path}/{tenant_id}/{logical_regex}"
+        req = self.proxy.client.delete(_path)
+        return req
+
+    def list_topic_mappings(self, tenant_id: str):
+        _path: str = f"{self.base_path}/{tenant_id}"
+        req = self.proxy.client.get(_path)
+        return req
+
+
+class TopicsTenants(ApiApplication):
+    app_path: str = "topics"
+
+    @property
+    def base_path(self) -> str:
+        return f"/{self.app_path}"
+
+    def list_topics(self, tenant_id: str) -> Response:
+        _path: str = f"{self.base_path}/{tenant_id}"
+        req = self.proxy.client.get(_path)
+        return req
+
+    def get_topic(self, tenant_id: str, logical_topic_name: str):
+        _path: str = f"{self.base_path}/{tenant_id}/{logical_topic_name}"
+        req = self.proxy.client.get(_path)
+        return req
