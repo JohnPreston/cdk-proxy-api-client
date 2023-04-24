@@ -16,51 +16,77 @@ except ImportError:
     from yaml import CDumper as Dumper
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
+from requests import Response
 
 from cdk_proxy_api_client.admin_auth import AdminAuth
 from cdk_proxy_api_client.cli.main_parser import set_parser
 from cdk_proxy_api_client.common.logging import LOG
+from cdk_proxy_api_client.concentration import TenantContentrationMapping, TopicsTenants
 from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
 from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
 from cdk_proxy_api_client.tools import load_config_file
 from cdk_proxy_api_client.tools.import_tenants_mappings import import_tenants_mappings
 
 
+def format_return(function):
+    """
+    Decorator to evaluate the requests payload returned
+    """
+
+    def wrapped_answer(*args, **kwargs):
+        """
+        Decorator wrapper
+        """
+        req = function(*args, **kwargs)
+        if isinstance(req, Response):
+            try:
+                return req.json()
+            except Exception as error:
+                print(error)
+                return req.text
+        return req
+
+    return wrapped_answer
+
+
+@format_return
 def auth_actions(proxy: ProxyClient, action: str, **kwargs):
     """Manages actions for AdminAuth"""
     admin_auth = AdminAuth(proxy)
     if action == "create":
-        try:
-            return admin_auth.create_tenant_credentials(
-                tenant_id=kwargs.get("tenant_name"),
-                token_lifetime_seconds=int(kwargs.get("token_lifetime_in_seconds")),
-            ).json()
-        except Exception as error:
-            LOG.exception(error)
-            LOG.error(
-                "Failed to create new Proxy token for {}".format(kwargs["tenant_name"])
-            )
+        req = admin_auth.create_tenant_credentials(
+            tenant_id=kwargs.get("tenant_name"),
+            token_lifetime_seconds=int(kwargs.get("token_lifetime_in_seconds")),
+        )
+    else:
+        raise NotImplementedError(f"Action {action} not yet implemented.")
+    return req
 
 
+@format_return
 def tenants_actions(proxy: ProxyClient, action: str, **kwargs):
     """Manages execution of Multitenancy"""
     multitenancy = Multitenancy(proxy)
     if action == "list":
-        return multitenancy.list_tenants(as_list=True)
+        req = multitenancy.list_tenants(as_list=True)
+
+    else:
+        raise NotImplementedError(f"Action {action} not yet implemented.")
+    return req
 
 
 def tenant_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
     """Manages actions for TenantMappings"""
+
     tenants_mappings = TenantTopicMappings(proxy)
     tenant_name = set_else_none("tenant_name", kwargs)
     if action == "list":
-        return tenants_mappings.list_tenant_topics_mappings(tenant_name).json()
+        req = tenants_mappings.list_tenant_topics_mappings(tenant_name).json()
     elif action == "import-from-tenants-config":
         content = load_config_file(path.abspath(kwargs["import_config_file"]))
-        topics_mappings = import_tenants_mappings(proxy, content, tenant_name)
-        return topics_mappings
+        req = import_tenants_mappings(proxy, content, tenant_name)
     elif action == "create":
-        tenants_mappings.create_tenant_topic_mapping(
+        req = tenants_mappings.create_tenant_topic_mapping(
             tenant_name,
             kwargs["logical_topic_name"],
             kwargs["physical_topic_name"],
@@ -74,16 +100,54 @@ def tenant_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
             "ignore_duplicates_conflict": True,
             "import_from_tenant": {"include_regex": [rf"^{source_tenant}$"]},
         }
-        topics_mappings = import_tenants_mappings(proxy, content, tenant_name)
-        return topics_mappings
+        req = import_tenants_mappings(proxy, content, tenant_name)
     elif action == "delete-topic-mapping":
         to_delete = kwargs.pop("logicalTopicName")
-        tenants_mappings.delete_tenant_topic_mapping(
+        req = tenants_mappings.delete_tenant_topic_mapping(
             tenant_id=tenant_name, logical_topic_name=to_delete
         )
-        return tenants_mappings.list_tenant_topics_mappings(tenant_name).json()
     elif action == "delete-all-mappings":
-        tenants_mappings.delete_all_tenant_topics_mappings(tenant_name)
+        req = tenants_mappings.delete_all_tenant_topics_mappings(tenant_name)
+    else:
+        raise NotImplementedError(f"Action {action} not yet implemented.")
+    return req
+
+
+@format_return
+def tenant_concentrated_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
+    """
+    Manage concentrated topic mappings.
+    :param proxy:
+    :param action:
+    :param kwargs:
+    :return:
+    """
+
+    concentration_mgmr = TenantContentrationMapping(proxy)
+    if action == "create":
+        req = concentration_mgmr.create_tenant_concentration(
+            kwargs["tenant_name"],
+            logical_regex=kwargs["topicRegex"],
+            physical_topic_name=kwargs["physicalTopicName"],
+        )
+    elif action == "list":
+        req = concentration_mgmr.list_topic_mappings(kwargs["tenant_name"])
+
+    else:
+        raise NotImplementedError(f"Action {action} not yet implemented.")
+    return req
+
+
+@format_return
+def tenant_topics(proxy: ProxyClient, action: str, **kwargs):
+    tenants_mgmr = TopicsTenants(proxy)
+    if action == "list":
+        req = tenants_mgmr.list_topics(kwargs["tenant_name"])
+    elif action == "get-topic":
+        req = tenants_mgmr.get_topic(kwargs["tenant_name"], kwargs["logicalTopicName"])
+    else:
+        raise NotImplementedError(f"Action {action} not yet implemented.")
+    return req
 
 
 def main():
@@ -121,6 +185,8 @@ def main():
         "tenants": tenants_actions,
         "tenant-topic-mappings": tenant_mappings_actions,
         "auth": auth_actions,
+        "tenant-concentrated-mappings": tenant_concentrated_mappings_actions,
+        "tenant-topics": tenant_topics,
     }
     dest_function = _categories_mappings[_category]
     response = dest_function(_proxy, _action, **_vars)
