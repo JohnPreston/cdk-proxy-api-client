@@ -132,7 +132,10 @@ def tenant_concentrated_mappings_actions(proxy: ProxyClient, action: str, **kwar
         )
     elif action == "list":
         req = concentration_mgmr.list_topic_mappings(kwargs["tenant_name"])
-
+    elif action == "delete":
+        req = concentration_mgmr.delete_concentration_mapping(
+            kwargs["tenant_name"], kwargs["logicalTopicName"]
+        )
     else:
         raise NotImplementedError(f"Action {action} not yet implemented.")
     return req

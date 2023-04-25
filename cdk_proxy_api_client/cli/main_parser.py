@@ -120,6 +120,15 @@ def set_tenant_concentration_mappings_subparsers(
     list_parser = mappings_subparser.add_parser(
         name="list", help="List topping mappings", parents=[TENANT_PARSER]
     )
+    delete_parser = mappings_subparser.add_parser(
+        name="delete", help="Delete /topicMappings mapping", parents=[TENANT_PARSER]
+    )
+    delete_parser.add_argument(
+        "--logical-topic-name",
+        dest="logicalTopicName",
+        help="Name of the logical mapping to delete",
+        required=True,
+    )
 
 
 def set_tenant_topics_subparsers(
