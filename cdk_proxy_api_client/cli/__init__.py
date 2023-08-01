@@ -25,6 +25,7 @@ from cdk_proxy_api_client.concentration import TenantContentrationMapping, Topic
 from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
 from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
 from cdk_proxy_api_client.tools import load_config_file
+from cdk_proxy_api_client.tools.import_from_config import import_clients
 from cdk_proxy_api_client.tools.import_tenants_mappings import import_tenants_mappings
 
 
@@ -175,11 +176,23 @@ def main():
                 f"Log level value {_args.loglevel} is invalid. Must me one of {valid_levels}"
             )
     _vars = vars(_args)
-    _client = ApiClient(
-        username=_vars.pop("username"),
-        password=_vars.pop("password"),
-        url=_vars.pop("url"),
-    )
+    if _args.url:
+        if not _args.username or not _args.password:
+            raise Exception(
+                "If you specify URL, you must specify username and password too"
+            )
+        _client = ApiClient(
+            username=_vars.pop("username"),
+            password=_vars.pop("password"),
+            url=_vars.pop("url"),
+        )
+    elif _args.profile_name:
+        _clients = import_clients(_args.config_file)
+        _client = _clients[_args.profile_name]
+    else:
+        raise Exception(
+            "You must either set --profile-name (possibly -c) or define --url, --username and --password"
+        )
     _category = _vars.pop("category")
     _action = _vars.pop("action")
     _proxy = ProxyClient(_client)
