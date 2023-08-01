@@ -1,23 +1,23 @@
-#!/usr/bin/env python
+"""
+Entrypoint functions of the rotation.
+The lambda handler first evaluates whether the request received is to simply request a new token for a given
+tenant and duration/expiry, or to manage the secret rotation itself.
 
+"""
 from __future__ import annotations
 
 import json
 import logging
 import os
-import re
-from copy import deepcopy
-from datetime import datetime
-from typing import Union
 
-import jwt
-import yaml
 from boto3.session import Session
-from compose_x_common.aws import get_assume_role_session
 from compose_x_common.compose_x_common import keyisset
 
-from cdk_proxy_api_client.admin_auth import AdminAuth
-from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
+from .cdk_gateway_management import (
+    get_cdk_gw_admin_creds,
+    get_new_token_for_tenant,
+    new_gateway_tenant_secret_value,
+)
 
 if logging.getLogger().hasHandlers():
     logging.getLogger().setLevel(logging.INFO)
