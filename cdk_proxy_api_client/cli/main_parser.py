@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
+from os import environ
 
 TENANT_PARSER = ArgumentParser(add_help=False)
 TENANT_PARSER.add_argument(
@@ -162,9 +163,23 @@ def set_parser():
     main_parser.add_argument(
         "--log-level", dest="loglevel", type=str, help="Set loglevel", required=False
     )
-    main_parser.add_argument("--username", required=True)
-    main_parser.add_argument("--password", required=True)
-    main_parser.add_argument("--url", required=True)
+    main_parser.add_argument("--url", required=False)
+    main_parser.add_argument("--username", required=False)
+    main_parser.add_argument("--password", required=False)
+    main_parser.add_argument(
+        "-c",
+        "--config-file",
+        type=str,
+        help="Path to the profiles files",
+        default="{}/.cdk_gw.yaml".format(environ.get("HOME", ".")),
+    )
+    main_parser.add_argument(
+        "-p",
+        "--profile-name",
+        type=str,
+        help="Name of the profile to use to make API Calls",
+    )
+
     cmd_parser = main_parser.add_subparsers(dest="category", help="Resources to manage")
     auth_admin_parser = cmd_parser.add_parser(
         name="auth",
