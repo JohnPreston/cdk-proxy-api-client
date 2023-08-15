@@ -15,8 +15,8 @@ from jsonschema import validate
 
 from cdk_proxy_api_client.common.logging import LOG
 from cdk_proxy_api_client.errors import ProxyApiException, ProxyGenericException
-from cdk_proxy_api_client.proxy_api import Multitenancy, ProxyClient
-from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
+from cdk_proxy_api_client.proxy_api import ProxyClient
+from cdk_proxy_api_client.vclusters import VirturalClusters
 
 DEFAULT_SCHEMA_PATH = pkg_files("cdk_proxy_api_client").joinpath(
     "specs/tenant_mappings-input.json"
@@ -33,10 +33,10 @@ def get_tenant_logical_topics(
     :param bool include_read_only:
     :return: List of topics logical available in the tenant.
     """
-    tenant_mappings = TenantTopicMappings(proxy)
+    tenant_mappings = VirturalClusters(proxy)
 
     topics_list: list[dict] = []
-    for _topic in tenant_mappings.list_tenant_topics_mappings(
+    for _topic in tenant_mappings.list_vcluster_topic_mappings(
         tenant_name, as_list=True
     ):
         if _topic["readOnly"] is True and not include_read_only:
@@ -48,7 +48,7 @@ def get_tenant_logical_topics(
 def import_from_tenants_include_string(
     proxy: ProxyClient,
     include_regex: str,
-    tenant_name: str,
+    vcluster_name: str,
     tenants: list[str],
     processed_tenants: list[str],
     process_once: bool = False,
@@ -60,7 +60,7 @@ def import_from_tenants_include_string(
         print(error)
         print(include_regex, "Not a valid regex")
         return
-    tenant_mappings = TenantTopicMappings(proxy)
+    tenant_mappings = VirturalClusters(proxy)
     for _tenant in tenants:
         if _pattern.match(_tenant):
             if process_once and _tenant in processed_tenants:
@@ -72,11 +72,11 @@ def import_from_tenants_include_string(
             else:
                 tenant_topics: list[dict] = get_tenant_logical_topics(proxy, _tenant)
                 for _import_tenant_topic in tenant_topics:
-                    tenant_mappings.create_tenant_topic_mapping(
-                        tenant_name,
+                    tenant_mappings.create_vcluster_topic_mapping(
+                        vcluster_name,
                         _import_tenant_topic["logicalTopicName"],
                         _import_tenant_topic["physicalTopicName"],
-                        read_write=False,
+                        read_only=False,
                     )
                 processed_tenants.append(_tenant)
 
@@ -199,7 +199,7 @@ def import_from_other_tenants(
     proxy: ProxyClient, import_config: dict, tenant_name: str
 ) -> None:
     """Allows to import existing topics from other tenants in read-only"""
-    tenants: list[str] = Multitenancy(proxy).list_tenants(as_list=True)
+    tenants: list[str] = VirturalClusters(proxy).list_vclusters(as_list=True)
     exclude_list = set_else_none("exclude_regex", import_config, [])
     include_list = set_else_none("include_regex", import_config, [])
     processed_tenants: list[str] = []
