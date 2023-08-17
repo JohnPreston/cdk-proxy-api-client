@@ -1,6 +1,10 @@
+#   SPDX-License-Identifier: Apache-2.0
+#   Copyright 2023 John Mille <john@ews-network.net>
+
 from __future__ import annotations
 
 from typing import Union
+from urllib.parse import quote
 
 from requests import Response
 
@@ -38,7 +42,7 @@ class VirturalClusters(ApiApplication):
         if not username:
             username = vcluster
         payload = {"lifeTimeSeconds": lifetime_in_seconds}
-        _path: str = f"{self.base_path}/username/{username}"
+        _path: str = f"{self.base_path}/vcluster/{vcluster}/username/{username}"
         LOG.debug("create_vcluster_user_token path {}".format(_path))
         req = self.proxy.client.post(
             _path, headers={"Accept": "application/json"}, json=payload
@@ -64,7 +68,9 @@ class VirturalClusters(ApiApplication):
             "readOnly": read_only,
             "concentrated": concentrated,
         }
-        _path: str = f"{self.base_path}/vcluster/{vcluster}/topics/{logical_topic_name}"
+        _path: str = (
+            f"{self.base_path}/vcluster/{vcluster}/topics/{quote(logical_topic_name)}"
+        )
         LOG.debug("create_vcluster_topic_mapping path: {}".format(_path))
         req = self.proxy.client.post(
             _path, headers=self.proxy.client.json_headers, json=payload
@@ -108,7 +114,9 @@ class VirturalClusters(ApiApplication):
         Docs: https://developers.conduktor.io/#tag/Virtual-Clusters/operation/Clusters_v1_deleteClusterTopicMapping
         Path: /admin/vclusters/v1/vcluster/{vcluster}/topics/{logicalTopicName}
         """
-        _path: str = f"{self.base_path}/vcluster/{vcluster}/topics/{logical_topic_name}"
+        _path: str = (
+            f"{self.base_path}/vcluster/{vcluster}/topics/{quote(logical_topic_name)}"
+        )
         LOG.debug(f"delete_tenant_topic_mapping path {_path}")
         try:
             req = self.proxy.client.delete(_path)

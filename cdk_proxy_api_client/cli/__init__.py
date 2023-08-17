@@ -25,6 +25,7 @@ from cdk_proxy_api_client.tools import load_config_file
 from cdk_proxy_api_client.tools.import_from_config import import_clients
 from cdk_proxy_api_client.tools.import_tenants_mappings import import_tenants_mappings
 from cdk_proxy_api_client.vclusters import VirturalClusters
+from cdk_proxy_api_client.plugins import Plugins
 
 
 def format_return(function):
@@ -96,7 +97,7 @@ def tenant_mappings_actions(
             logical_topic_name=kwargs["logical_topic_name"],
             physical_topic_name=kwargs["physical_topic_name"],
             read_only=keyisset("ReadOnly", kwargs),
-            concentrated=keyisset("concentrated", kwargs)
+            concentrated=keyisset("concentrated", kwargs),
         )
     elif action == "import-from-tenant":
         source_tenant = kwargs.pop("source_tenant")
@@ -116,6 +117,16 @@ def tenant_mappings_actions(
         req = vcluster.delete_vcluster_topics_mappings(vcluster_name)
     else:
         raise NotImplementedError(f"Action {action} not yet implemented.")
+    return req
+
+
+@format_return
+def plugins_actions(proxy: ProxyClient, action: str, **kwargs):
+    _plugins = Plugins(proxy)
+    if action == "list":
+        req = _plugins.list_all_plugins(extended=keyisset("extended", kwargs), as_list=keyisset("as_list", kwargs))
+    else:
+        raise NotImplementedError("Action {} is not implemented yet.".format(action))
     return req
 
 
@@ -164,6 +175,7 @@ def main():
 
     _categories_mappings: dict = {
         "vclusters": vclusters_actions,
+        "plugins": plugins_actions
     }
     dest_function = _categories_mappings[_category]
     response = dest_function(_proxy, _action, **_vars)
