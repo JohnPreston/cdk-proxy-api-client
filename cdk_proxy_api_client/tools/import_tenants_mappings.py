@@ -17,6 +17,7 @@ from cdk_proxy_api_client.common.logging import LOG
 from cdk_proxy_api_client.errors import ProxyApiException, ProxyGenericException
 from cdk_proxy_api_client.proxy_api import ProxyClient
 from cdk_proxy_api_client.vclusters import VirturalClusters
+from cdk_proxy_api_client.vclusters import VirturalClusters
 
 DEFAULT_SCHEMA_PATH = pkg_files("cdk_proxy_api_client").joinpath(
     "specs/tenant_mappings-input.json"
@@ -129,7 +130,7 @@ def import_from_tenants_include_dict(
                 )
                 return
 
-    tenant_mappings = TenantTopicMappings(proxy)
+    tenant_mappings = VirturalClusters(proxy)
     for _tenant in tenants:
         if _pattern.match(_tenant):
             if process_once and _tenant in processed_tenants:
@@ -175,11 +176,11 @@ def import_from_tenants_include_dict(
         grant_write_access = keyisset("grant_write_access", mapping_import_config)
         for topic_mapping in final_topics_import:
             try:
-                tenant_mappings.create_tenant_topic_mapping(
+                tenant_mappings.create_vcluster_topic_mapping(
                     tenant_name,
                     topic_mapping["logicalTopicName"],
                     topic_mapping["physicalTopicName"],
-                    read_write=grant_write_access,
+                    read_only=not grant_write_access,
                 )
                 if grant_write_access:
                     LOG.warn(
@@ -245,18 +246,18 @@ def import_from_other_tenants(
 
 
 def propagate_tenant_mappings(
-    tenant_mappings: TenantTopicMappings,
+    tenant_mappings: VirturalClusters,
     mappings: list[dict],
     tenant_name: str,
     ignore_conflicts: bool = False,
 ) -> None:
     for mapping in mappings:
         try:
-            tenant_mappings.create_tenant_topic_mapping(
+            tenant_mappings.create_vcluster_topic_mapping(
                 tenant_name,
                 mapping["logicalTopicName"],
                 mapping["physicalTopicName"],
-                read_write=not keyisset("readOnly", mapping),
+                read_only=keyisset("readOnly", mapping),
             )
         except ProxyGenericException as error:
             if error.code == 409 and ignore_conflicts:
@@ -273,7 +274,7 @@ def import_tenants_mappings(
     tenant_name = set_else_none("tenant_name", config_content, tenant_name)
     ignore_conflicts = keyisset("ignore_duplicates_conflict", config_content)
     mappings = config_content["mappings"]
-    tenant_mappings = TenantTopicMappings(client)
+    tenant_mappings = VirturalClusters(client)
     propagate_tenant_mappings(tenant_mappings, mappings, tenant_name, ignore_conflicts)
     import_from_other_tenants_config = set_else_none(
         "import_from_tenant", config_content
@@ -281,4 +282,4 @@ def import_tenants_mappings(
     if import_from_other_tenants_config:
         import_from_other_tenants(client, import_from_other_tenants_config, tenant_name)
 
-    return tenant_mappings.list_tenant_topics_mappings(tenant_name, True)
+    return tenant_mappings.list_vcluster_topic_mappings(tenant_name, True)

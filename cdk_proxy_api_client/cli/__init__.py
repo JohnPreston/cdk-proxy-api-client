@@ -88,7 +88,7 @@ def tenant_mappings_actions(
     vcluster_name = set_else_none("vcluster_name", kwargs)
     if action == "list":
         req = vcluster.list_vcluster_topic_mappings(vcluster_name).json()
-    elif action == "import-from-tenants-config":
+    elif action == "import-from-vclusters-config":
         content = load_config_file(path.abspath(kwargs["import_config_file"]))
         req = import_tenants_mappings(proxy, content, vcluster_name)
     elif action == "create":

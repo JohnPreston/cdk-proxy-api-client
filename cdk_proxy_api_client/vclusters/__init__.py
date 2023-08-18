@@ -21,11 +21,11 @@ class VirturalClusters(ApiApplication):
     app_path: str = "admin/vclusters"
 
     def list_vclusters(self, as_list: bool = False) -> Union[Response, list[str]]:
-        _path: str = f"{self.base_path}"
+        _path: str = f"{self.base_path}/"
         LOG.debug(f"list_vclusters path {_path}")
         req = self.proxy.client.get(_path, headers={"Accept": "application/json"})
         if as_list:
-            return req.json()["tenants"]
+            return req.json()
         return req
 
     def create_vcluster_user_token(
