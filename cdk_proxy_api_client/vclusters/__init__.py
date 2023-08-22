@@ -58,6 +58,7 @@ class VirturalClusters(ApiApplication):
         physical_topic_name: str,
         read_only: bool = False,
         concentrated: bool = False,
+        cluster_id: str = None,
     ) -> Response:
         """
         Docs: https://developers.conduktor.io/#tag/Virtual-Clusters/operation/Clusters_v1_createClusterTopicMapping
@@ -68,6 +69,9 @@ class VirturalClusters(ApiApplication):
             "readOnly": read_only,
             "concentrated": concentrated,
         }
+        if cluster_id:
+            payload["clusterId"] = cluster_id
+        print(payload)
         _path: str = (
             f"{self.base_path}/vcluster/{vcluster}/topics/{quote(logical_topic_name)}"
         )

@@ -27,7 +27,9 @@ def set_interceptors_actions_parsers(interceptors_subparsers):
         name="list", help="List vCluster interceptors", parents=[VCLUSTER_PARSER]
     )
     create_parser = interceptors_subparsers.add_parser(
-        name="create-update", help="Create or update a new vCluster mapping", parents=[VCLUSTER_PARSER]
+        name="create-update",
+        help="Create or update a new vCluster mapping",
+        parents=[VCLUSTER_PARSER],
     )
     create_parser.add_argument("--interceptor-name", type=str, required=True)
     create_parser.add_argument(

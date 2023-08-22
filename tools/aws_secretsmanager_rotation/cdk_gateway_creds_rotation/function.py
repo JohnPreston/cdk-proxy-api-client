@@ -1,7 +1,7 @@
 """
 Entrypoint functions of the rotation.
 The lambda handler first evaluates whether the request received is to simply request a new token for a given
-tenant and duration/expiry, or to manage the secret rotation itself.
+vcluster and duration/expiry, or to manage the secret rotation itself.
 
 """
 from __future__ import annotations
@@ -15,8 +15,8 @@ from compose_x_common.compose_x_common import keyisset
 
 from .cdk_gateway_management import (
     get_cdk_gw_admin_creds,
-    get_new_token_for_tenant,
-    new_gateway_tenant_secret_value,
+    get_new_token_for_vcluster,
+    new_gateway_vcluster_secret_value,
 )
 
 if logging.getLogger().hasHandlers():
@@ -44,12 +44,15 @@ if not CENTRAL_FUNCTION_ARN_TO_INVOKE and not CDK_API_ENDPOINT:
 
 def lambda_handler(event, context):
     lambda_session = Session()
-    if keyisset("tenant", event) and keyisset("expiry", event):
+    if keyisset("vcluster", event) and keyisset("expiry", event):
         gateway_secret = get_cdk_gw_admin_creds(lambda_session)
         return {
-            "token": get_new_token_for_tenant(
+            "token": get_new_token_for_vcluster(
                 gateway_secret,
-                {"tenant": event["tenant"]},
+                {
+                    "vcluster": event["vcluster"],
+                    "username": event.get("username") or event["vcluster"],
+                },
                 int(event["expiry"]),
                 token_only=True,
             )
@@ -89,7 +92,7 @@ def lambda_handler(event, context):
 
 def create_secret(lambda_session: Session, arn, token, current_value):
     """
-    Creates the new secret for tenant and stores in Secret with AWSPENDING stage.
+    Creates the new secret for vcluster and stores in Secret with AWSPENDING stage.
     First, we check that there are no AWSPENDING secret value already in place.
     """
     client = lambda_session.client("secretsmanager")
@@ -105,7 +108,7 @@ def create_secret(lambda_session: Session, arn, token, current_value):
     except:
         logger.debug("No AWSPENDING secret already set. Clear to proceed.")
         try:
-            new_secret_value = new_gateway_tenant_secret_value(
+            new_secret_value = new_gateway_vcluster_secret_value(
                 current_value, arn, token, lambda_session
             )
             client.put_secret_value(

@@ -43,6 +43,12 @@ def set_vclusters_actions_parsers(vclusters_subparsers):
         help="Sets the username to use for sasl.username to connect to the virtual cluster",
         required=False,
     )
+    tenant_token_create_parser.add_argument(
+        "--as-kafka-config",
+        action="store_true",
+        help="Returns the kafka config file",
+        default=False,
+    )
     set_vcluster_mappings_actions(vclusters_subparsers)
 
 
@@ -78,6 +84,12 @@ def set_vcluster_mappings_actions(vclusters_subparsers):
         default=False,
         action="store_true",
         help="Create concentrated mapping",
+    )
+    create_parser.add_argument(
+        "--cluster-id",
+        type=str,
+        required=False,
+        help="Creates a mapping for merged cluster",
     )
     # Delete action parsers
     delete_all_mappings_parser = mappings_subparsers.add_parser(

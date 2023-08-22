@@ -14,8 +14,8 @@ from boto3.session import Session
 from compose_x_common.aws import get_assume_role_session
 from compose_x_common.compose_x_common import keyisset
 
-from cdk_proxy_api_client.admin_auth import AdminAuth
-from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
+from cdk_proxy_api_client.vclusters import VirturalClusters
+from cdk_proxy_api_client.proxy_api import ApiClient, ProxyClient
 
 from .common import replace_string_in_dict_values
 
@@ -43,14 +43,14 @@ if not CENTRAL_FUNCTION_ARN_TO_INVOKE and not CDK_API_ENDPOINT:
     )
 
 
-def new_gateway_tenant_secret_value(
+def new_gateway_vcluster_secret_value(
     current_value: Union[dict, str],
     secret_arn: str,
     token: str,
     lambda_session: Session,
 ) -> Union[dict, str]:
     """
-    Calls the GW API Enpdoint to generate a new JWT token for the tenant.
+    Calls the GW API Enpdoint to generate a new JWT token for the vcluster.
     It will then use the value of the AWSCURRENT secret and replace the content wit the new token.
 
     If CENTRAL_FUNCTION_ARN_TO_INVOKE is set, invokes that function to perform the token creation
@@ -61,9 +61,9 @@ def new_gateway_tenant_secret_value(
     """
     if isinstance(current_value, dict):
         current_jwt_token = current_value["SASL_PASSWORD"]
-        jwt_token_details = get_tenant_details_from_token(current_jwt_token)
+        jwt_token_details = get_vcluster_details_from_token(current_jwt_token)
     else:
-        jwt_token_details = get_tenant_details_from_token(current_value)
+        jwt_token_details = get_vcluster_details_from_token(current_value)
     logger.info(
         "Token expiry was set to {}".format(
             datetime.utcfromtimestamp(jwt_token_details["exp"]).strftime("%FT%T")
@@ -78,16 +78,18 @@ def new_gateway_tenant_secret_value(
         gateway_secret = get_cdk_gw_admin_creds(lambda_session)
         logger.info("Successfully retrieved GW admin credentials")
         try:
-            logger.info(f"creating token for tenant - {jwt_token_details['tenant']}")
+            logger.info(
+                f"creating token for vcluster - {jwt_token_details['vcluster']} - {jwt_token_details['username']}"
+            )
 
-            new_jwt_token = get_new_token_for_tenant(
+            new_jwt_token = get_new_token_for_vcluster(
                 gateway_secret, jwt_token_details, NEW_TOKEN_LIFETIME_IN_SECONDS
             )
         except Exception as error:
             logger.exception(error)
             logger.error(
-                "Failed to create a new JWT token for tenant {}".format(
-                    jwt_token_details["tenant"]
+                "Failed to create a new JWT token for vcluster {}".format(
+                    jwt_token_details["vcluster"]
                 )
             )
             raise
@@ -95,7 +97,7 @@ def new_gateway_tenant_secret_value(
         new_secret_value = replace_string_in_dict_values(
             current_value,
             current_value["SASL_USERNAME"],
-            jwt_token_details["tenant"],
+            jwt_token_details["vcluster"],
             True,
         )
         replace_string_in_dict_values(
@@ -116,7 +118,8 @@ def get_token_from_central_function(
             FunctionName=CENTRAL_FUNCTION_ARN_TO_INVOKE,
             Payload=json.dumps(
                 {
-                    "tenant": jwt_token_details["tenant"],
+                    "vcluster": jwt_token_details["vcluster"],
+                    "username": jwt_token_details["username"],
                     "expiry": NEW_TOKEN_LIFETIME_IN_SECONDS,
                 }
             ),
@@ -175,8 +178,8 @@ def get_cdk_gw_admin_creds(lambda_session: Session) -> dict:
     raise ValueError(f"No admin user found in {cdk_api_secret_arn}")
 
 
-def get_tenant_details_from_token(jwt_token: str) -> dict:
-    """Uses existing secret JWT token to identify tenant owner"""
+def get_vcluster_details_from_token(jwt_token: str) -> dict:
+    """Uses existing secret JWT token to identify vcluster owner"""
     try:
         jwt_content = jwt.decode(
             jwt_token,
@@ -189,12 +192,12 @@ def get_tenant_details_from_token(jwt_token: str) -> dict:
         raise error
 
 
-def get_new_token_for_tenant(
-    gw_admin_secret: dict, tenant: dict, life, token_only: bool = True
+def get_new_token_for_vcluster(
+    gw_admin_secret: dict, vcluster: dict, life, token_only: bool = True
 ) -> str:
     try:
         logger.info(
-            f"creating secret for {tenant['tenant']} with user on host {CDK_API_ENDPOINT}"
+            f"creating secret for {vcluster['vcluster']}/{vcluster['username']} with user on host {CDK_API_ENDPOINT}"
         )
         api_client = ApiClient(
             username=gw_admin_secret["username"],
@@ -202,18 +205,19 @@ def get_new_token_for_tenant(
             url=CDK_API_ENDPOINT,
         )
         proxy_client = ProxyClient(api_client)
-        admin_client = AdminAuth(proxy_client)
-        logger.debug(Multitenancy(proxy_client).list_tenants().json())
-        token = admin_client.create_tenant_credentials(
-            tenant_id=tenant["tenant"],
-            token_lifetime_seconds=life,
+        admin_client = VirturalClusters(proxy_client)
+        logger.debug(admin_client.list_vclusters(as_list=True))
+        token = admin_client.create_vcluster_user_token(
+            vcluster=vcluster["vcluster"],
+            username=vcluster["username"],
+            lifetime_in_seconds=life,
             token_only=token_only,
         )
         return token
     except Exception as error:
         logger.exception(error)
         logger.error(
-            "get_new_token_for_tenant : Failed to create new jwt token for {}".format(
-                tenant["tenant"]
+            "get_new_token_for_vcluster : Failed to create new jwt token for {}".format(
+                vcluster["vcluster"]
             )
         )

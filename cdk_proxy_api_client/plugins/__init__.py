@@ -16,7 +16,9 @@ from cdk_proxy_api_client.proxy_api import ApiApplication
 class Plugins(ApiApplication):
     app_path: str = "admin/plugins"
 
-    def list_all_plugins(self, extended: bool = False, as_list: bool = False) -> Union[Response, list]:
+    def list_all_plugins(
+        self, extended: bool = False, as_list: bool = False
+    ) -> Union[Response, list]:
         """
         Docs: https://developers.conduktor.io/#tag/Plugins/operation/Plugins_v1_getPlugins
         Path: /admin/plugins/v1

@@ -9,8 +9,8 @@ from os import environ
 from cdk_proxy_api_client.cli.interceptors_parser import (
     set_interceptors_actions_parsers,
 )
-from cdk_proxy_api_client.cli.vclusters_parser import set_vclusters_actions_parsers
 from cdk_proxy_api_client.cli.plugins_parser import set_plugings_actions_parsers
+from cdk_proxy_api_client.cli.vclusters_parser import set_vclusters_actions_parsers
 
 
 def set_parser():
@@ -59,9 +59,7 @@ def set_parser():
     )
     set_interceptors_actions_parsers(interceptors_subparsers)
 
-    plugins_parser = cmd_parser.add_parser(
-        name="plugins", help="Manage plugins"
-    )
+    plugins_parser = cmd_parser.add_parser(name="plugins", help="Manage plugins")
     plugins_subparsers = plugins_parser.add_subparsers(
         dest="action", help="Manage plugins actions"
     )

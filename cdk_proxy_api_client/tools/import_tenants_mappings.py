@@ -17,7 +17,6 @@ from cdk_proxy_api_client.common.logging import LOG
 from cdk_proxy_api_client.errors import ProxyApiException, ProxyGenericException
 from cdk_proxy_api_client.proxy_api import ProxyClient
 from cdk_proxy_api_client.vclusters import VirturalClusters
-from cdk_proxy_api_client.vclusters import VirturalClusters
 
 DEFAULT_SCHEMA_PATH = pkg_files("cdk_proxy_api_client").joinpath(
     "specs/tenant_mappings-input.json"

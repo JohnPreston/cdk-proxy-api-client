@@ -20,12 +20,12 @@ from requests import Response
 
 from cdk_proxy_api_client.cli.main_parser import set_parser
 from cdk_proxy_api_client.common.logging import LOG
+from cdk_proxy_api_client.plugins import Plugins
 from cdk_proxy_api_client.proxy_api import ApiClient, ProxyClient
 from cdk_proxy_api_client.tools import load_config_file
 from cdk_proxy_api_client.tools.import_from_config import import_clients
 from cdk_proxy_api_client.tools.import_tenants_mappings import import_tenants_mappings
 from cdk_proxy_api_client.vclusters import VirturalClusters
-from cdk_proxy_api_client.plugins import Plugins
 
 
 def format_return(function):
@@ -68,15 +68,25 @@ def vclusters_actions(proxy: ProxyClient, action: str, **kwargs):
 
 def auth_actions(vcluster: VirturalClusters, action: str, **kwargs):
     """Manages actions for auth vClusters subparser"""
+    username = kwargs.get("username") or kwargs["vcluster_name"]
     if action == "create":
         req = vcluster.create_vcluster_user_token(
             vcluster=kwargs.get("vcluster_name"),
-            username=kwargs.get("username"),
+            username=username,
             lifetime_in_seconds=int(kwargs.get("token_lifetime_in_seconds")),
             token_only=keyisset("token_only", kwargs),
         )
     else:
         raise NotImplementedError(f"Action {action} not yet implemented.")
+    if keyisset("as_kafka_config", kwargs):
+        req = req.json()
+        return """security.protocol=SASL_SSL
+sasl.mechanism=PLAIN
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="{}" password="{}";
+client.id=CLI_{}
+        """.format(
+            username, req["token"], username
+        )
     return req
 
 
@@ -98,6 +108,7 @@ def tenant_mappings_actions(
             physical_topic_name=kwargs["physical_topic_name"],
             read_only=keyisset("ReadOnly", kwargs),
             concentrated=keyisset("concentrated", kwargs),
+            cluster_id=kwargs.get("cluster_id"),
         )
     elif action == "import-from-tenant":
         source_tenant = kwargs.pop("source_tenant")
@@ -124,7 +135,9 @@ def tenant_mappings_actions(
 def plugins_actions(proxy: ProxyClient, action: str, **kwargs):
     _plugins = Plugins(proxy)
     if action == "list":
-        req = _plugins.list_all_plugins(extended=keyisset("extended", kwargs), as_list=keyisset("as_list", kwargs))
+        req = _plugins.list_all_plugins(
+            extended=keyisset("extended", kwargs), as_list=keyisset("as_list", kwargs)
+        )
     else:
         raise NotImplementedError("Action {} is not implemented yet.".format(action))
     return req
@@ -175,11 +188,14 @@ def main():
 
     _categories_mappings: dict = {
         "vclusters": vclusters_actions,
-        "plugins": plugins_actions
+        "plugins": plugins_actions,
     }
     dest_function = _categories_mappings[_category]
     response = dest_function(_proxy, _action, **_vars)
     if not response:
+        return
+    if isinstance(response, str):
+        print(response)
         return
     try:
         if _args.output_format == "json":
