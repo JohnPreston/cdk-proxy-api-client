@@ -32,10 +32,11 @@ admin.create_tenant_credentials("a_tenant_name")
 * List all topic mappings for a tenant
 
 ```python
-from cdk_proxy_api_client.proxy_api import Multitenancy
 
-tenants_mgmt = Multitenancy(proxy_client)
-tenants = tenants_mgmt.list_tenants(as_list=True)
+from cdk_proxy_api_client.vclusters import VirturalClusters
+
+tenants_mgmt = VirturalClusters(proxy_client)
+tenants = tenants_mgmt.list_vclusters(as_list=True)
 ```
 
 * Create a new mapping for a tenant
@@ -49,7 +50,7 @@ tenant_mappings_mgmt = TenantTopicMappings(proxy_client)
 tenant_mappings_mgmt.create_tenant_topic_mapping(
     "tenant_name", "logical_name", "real_name"
 )
-tenant_mappings_mgmt.delete_tenant_topic_mapping("tenant_name", "logical_name")
+tenant_mappings_mgmt.delete_vcluster_topic_mapping("tenant_name", "logical_name")
 ```
 
 ## Testing

@@ -18,15 +18,14 @@ except ImportError:
 from compose_x_common.compose_x_common import keyisset, set_else_none
 from requests import Response
 
-from cdk_proxy_api_client.admin_auth import AdminAuth
 from cdk_proxy_api_client.cli.main_parser import set_parser
 from cdk_proxy_api_client.common.logging import LOG
-from cdk_proxy_api_client.concentration import TenantContentrationMapping, TopicsTenants
-from cdk_proxy_api_client.proxy_api import ApiClient, Multitenancy, ProxyClient
-from cdk_proxy_api_client.tenant_mappings import TenantTopicMappings
+from cdk_proxy_api_client.plugins import Plugins
+from cdk_proxy_api_client.proxy_api import ApiClient, ProxyClient
 from cdk_proxy_api_client.tools import load_config_file
 from cdk_proxy_api_client.tools.import_from_config import import_clients
 from cdk_proxy_api_client.tools.import_tenants_mappings import import_tenants_mappings
+from cdk_proxy_api_client.vclusters import VirturalClusters
 
 
 def format_return(function):
@@ -51,106 +50,96 @@ def format_return(function):
 
 
 @format_return
-def auth_actions(proxy: ProxyClient, action: str, **kwargs):
-    """Manages actions for AdminAuth"""
-    admin_auth = AdminAuth(proxy)
-    if action == "create":
-        req = admin_auth.create_tenant_credentials(
-            tenant_id=kwargs.get("tenant_name"),
-            token_lifetime_seconds=int(kwargs.get("token_lifetime_in_seconds")),
+def vclusters_actions(proxy: ProxyClient, action: str, **kwargs):
+    """Manages execution of vClusters"""
+    vclusters = VirturalClusters(proxy)
+    if action == "list":
+        req = vclusters.list_vclusters(as_list=True)
+    elif action == "auth":
+        req = auth_actions(vclusters, kwargs.pop("sub_action"), **kwargs)
+    elif action == "mappings":
+        req = tenant_mappings_actions(
+            proxy, vclusters, kwargs.pop("sub_action"), **kwargs
         )
     else:
         raise NotImplementedError(f"Action {action} not yet implemented.")
     return req
 
 
-@format_return
-def tenants_actions(proxy: ProxyClient, action: str, **kwargs):
-    """Manages execution of Multitenancy"""
-    multitenancy = Multitenancy(proxy)
-    if action == "list":
-        req = multitenancy.list_tenants(as_list=True)
-
+def auth_actions(vcluster: VirturalClusters, action: str, **kwargs):
+    """Manages actions for auth vClusters subparser"""
+    username = kwargs.get("username") or kwargs["vcluster_name"]
+    if action == "create":
+        req = vcluster.create_vcluster_user_token(
+            vcluster=kwargs.get("vcluster_name"),
+            username=username,
+            lifetime_in_seconds=int(kwargs.get("token_lifetime_in_seconds")),
+            token_only=keyisset("token_only", kwargs),
+        )
     else:
         raise NotImplementedError(f"Action {action} not yet implemented.")
+    if keyisset("as_kafka_config", kwargs):
+        req = req.json()
+        return """security.protocol=SASL_SSL
+sasl.mechanism=PLAIN
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="{}" password="{}";
+client.id=CLI_{}
+        """.format(
+            username, req["token"], username
+        )
     return req
 
 
-def tenant_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
-    """Manages actions for TenantMappings"""
+def tenant_mappings_actions(
+    proxy: ProxyClient, vcluster: VirturalClusters, action: str, **kwargs
+):
+    """Manages actions for mappings vClusters actions"""
 
-    tenants_mappings = TenantTopicMappings(proxy)
-    tenant_name = set_else_none("tenant_name", kwargs)
+    vcluster_name = set_else_none("vcluster_name", kwargs)
     if action == "list":
-        req = tenants_mappings.list_tenant_topics_mappings(tenant_name).json()
-    elif action == "import-from-tenants-config":
+        req = vcluster.list_vcluster_topic_mappings(vcluster_name).json()
+    elif action == "import-from-vclusters-config":
         content = load_config_file(path.abspath(kwargs["import_config_file"]))
-        req = import_tenants_mappings(proxy, content, tenant_name)
+        req = import_tenants_mappings(proxy, content, vcluster_name)
     elif action == "create":
-        req = tenants_mappings.create_tenant_topic_mapping(
-            tenant_name,
-            kwargs["logical_topic_name"],
-            kwargs["physical_topic_name"],
-            keyisset("ReadWrite", kwargs),
+        req = vcluster.create_vcluster_topic_mapping(
+            vcluster=vcluster_name,
+            logical_topic_name=kwargs["logical_topic_name"],
+            physical_topic_name=kwargs["physical_topic_name"],
+            read_only=keyisset("ReadOnly", kwargs),
+            concentrated=keyisset("concentrated", kwargs),
+            cluster_id=kwargs.get("cluster_id"),
         )
     elif action == "import-from-tenant":
         source_tenant = kwargs.pop("source_tenant")
         content = {
-            "tenant_name": tenant_name,
+            "vcluster_name": vcluster_name,
             "mappings": [],
             "ignore_duplicates_conflict": True,
             "import_from_tenant": {"include_regex": [rf"^{source_tenant}$"]},
         }
-        req = import_tenants_mappings(proxy, content, tenant_name)
+        req = import_tenants_mappings(proxy, content, vcluster_name)
     elif action == "delete-topic-mapping":
         to_delete = kwargs.pop("logicalTopicName")
-        req = tenants_mappings.delete_tenant_topic_mapping(
-            tenant_id=tenant_name, logical_topic_name=to_delete
+        req = vcluster.delete_vcluster_topic_mapping(
+            vcluster=vcluster_name, logical_topic_name=to_delete
         )
     elif action == "delete-all-mappings":
-        req = tenants_mappings.delete_all_tenant_topics_mappings(tenant_name)
+        req = vcluster.delete_vcluster_topics_mappings(vcluster_name)
     else:
         raise NotImplementedError(f"Action {action} not yet implemented.")
     return req
 
 
 @format_return
-def tenant_concentrated_mappings_actions(proxy: ProxyClient, action: str, **kwargs):
-    """
-    Manage concentrated topic mappings.
-    :param proxy:
-    :param action:
-    :param kwargs:
-    :return:
-    """
-
-    concentration_mgmr = TenantContentrationMapping(proxy)
-    if action == "create":
-        req = concentration_mgmr.create_tenant_concentration(
-            kwargs["tenant_name"],
-            logical_regex=kwargs["topicRegex"],
-            physical_topic_name=kwargs["physicalTopicName"],
-        )
-    elif action == "list":
-        req = concentration_mgmr.list_topic_mappings(kwargs["tenant_name"])
-    elif action == "delete":
-        req = concentration_mgmr.delete_concentration_mapping(
-            kwargs["tenant_name"], kwargs["logicalTopicName"]
-        )
-    else:
-        raise NotImplementedError(f"Action {action} not yet implemented.")
-    return req
-
-
-@format_return
-def tenant_topics(proxy: ProxyClient, action: str, **kwargs):
-    tenants_mgmr = TopicsTenants(proxy)
+def plugins_actions(proxy: ProxyClient, action: str, **kwargs):
+    _plugins = Plugins(proxy)
     if action == "list":
-        req = tenants_mgmr.list_topics(kwargs["tenant_name"])
-    elif action == "get-topic":
-        req = tenants_mgmr.get_topic(kwargs["tenant_name"], kwargs["logicalTopicName"])
+        req = _plugins.list_all_plugins(
+            extended=keyisset("extended", kwargs), as_list=keyisset("as_list", kwargs)
+        )
     else:
-        raise NotImplementedError(f"Action {action} not yet implemented.")
+        raise NotImplementedError("Action {} is not implemented yet.".format(action))
     return req
 
 
@@ -198,15 +187,15 @@ def main():
     _proxy = ProxyClient(_client)
 
     _categories_mappings: dict = {
-        "tenants": tenants_actions,
-        "tenant-topic-mappings": tenant_mappings_actions,
-        "auth": auth_actions,
-        "tenant-concentrated-mappings": tenant_concentrated_mappings_actions,
-        "tenant-topics": tenant_topics,
+        "vclusters": vclusters_actions,
+        "plugins": plugins_actions,
     }
     dest_function = _categories_mappings[_category]
     response = dest_function(_proxy, _action, **_vars)
     if not response:
+        return
+    if isinstance(response, str):
+        print(response)
         return
     try:
         if _args.output_format == "json":
