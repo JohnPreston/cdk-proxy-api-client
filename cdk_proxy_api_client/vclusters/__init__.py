@@ -64,6 +64,9 @@ class VirturalClusters(ApiApplication):
         Docs: https://developers.conduktor.io/#tag/Virtual-Clusters/operation/Clusters_v1_createClusterTopicMapping
         Path: /admin/vclusters/v1/vcluster/{vcluster}/topics/{logicalTopicName}
         """
+        _path: str = (
+            f"{self.base_path}/vcluster/{vcluster}/topics/{quote(logical_topic_name)}"
+        )
         payload: dict = {
             "physicalTopicName": physical_topic_name,
             "readOnly": read_only,
@@ -72,13 +75,12 @@ class VirturalClusters(ApiApplication):
         if cluster_id:
             payload["clusterId"] = cluster_id
         print(payload)
-        _path: str = (
-            f"{self.base_path}/vcluster/{vcluster}/topics/{quote(logical_topic_name)}"
-        )
+        if payload["concentrated"] and payload["readOnly"]:
+            raise ValueError(
+                "{} - concentrated is true, read_only cannot be true.".format(_path)
+            )
         LOG.debug("create_vcluster_topic_mapping path: {}".format(_path))
-        req = self.proxy.client.post(
-            _path, headers=self.proxy.client.json_headers, json=payload
-        )
+        req = self.proxy.client.post(_path, json=payload)
         return req
 
     def list_vcluster_topic_mappings(
