@@ -12,26 +12,36 @@ VCLUSTER_PARSER.add_argument(
     required=True,
     help="Name of the vcluster to make operations for",
 )
-VCLUSTER_PARSER.add_argument(
+
+USERNAME_PARSER = ArgumentParser(add_help=False)
+USERNAME_PARSER.add_argument(
     "--username",
-    dest="vcluster_name",
+    dest="vcluster_username",
     required=False,
     help="Specify username to get interceptors for",
 )
 
 
-def set_interceptors_actions_parsers(interceptors_subparsers):
+def set_interceptors_actions_parsers(vclusters_subparsers):
     """Creates all the parser and subparsers for vClusters API endpoints"""
 
-    interceptors_subparsers.add_parser(
-        name="list", help="List vCluster interceptors", parents=[VCLUSTER_PARSER]
+    interceptors_parser = vclusters_subparsers.add_parser(
+        name="interceptors",
+        help="List vCluster interceptors",
+        parents=[VCLUSTER_PARSER],
+    )
+    interceptors_subparsers = interceptors_parser.add_subparsers(dest="sub_action")
+    list_parser = interceptors_subparsers.add_parser(
+        name="list",
+        help="List interceptors for vcluster/username",
+        parents=[USERNAME_PARSER],
     )
     create_parser = interceptors_subparsers.add_parser(
         name="create-update",
         help="Create or update a new vCluster mapping",
-        parents=[VCLUSTER_PARSER],
+        parents=[USERNAME_PARSER],
     )
-    create_parser.add_argument("--interceptor-name", type=str, required=True)
+    # create_parser.add_argument("--interceptor-name", type=str, required=True)
     create_parser.add_argument(
         "--config",
         type=str,
@@ -43,11 +53,11 @@ def set_interceptors_actions_parsers(interceptors_subparsers):
     delete_interceptor_mapping_parser = interceptors_subparsers.add_parser(
         name="delete",
         help="Delete interceptor",
-        parents=[VCLUSTER_PARSER],
+        parents=[USERNAME_PARSER],
     )
     delete_interceptor_mapping_parser.add_argument(
         "--interceptor-name",
-        dest="logicalTopicName",
+        dest="interceptor_name",
         required=True,
         help="Interceptor name to delete as seen in the vCluster.",
     )

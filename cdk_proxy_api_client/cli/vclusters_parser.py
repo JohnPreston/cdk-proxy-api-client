@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from argparse import ArgumentParser
 
+from .interceptors_parser import set_interceptors_actions_parsers
+
 VCLUSTER_PARSER = ArgumentParser(add_help=False)
 VCLUSTER_PARSER.add_argument(
     "--vcluster-name",
@@ -50,6 +52,7 @@ def set_vclusters_actions_parsers(vclusters_subparsers):
         default=False,
     )
     set_vcluster_mappings_actions(vclusters_subparsers)
+    set_interceptors_actions_parsers(vclusters_subparsers)
 
 
 def set_vcluster_mappings_actions(vclusters_subparsers):

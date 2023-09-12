@@ -51,13 +51,6 @@ def set_parser():
         dest="action", help="vCluster tokens management"
     )
     set_vclusters_actions_parsers(vclusters_subparsers)
-    interceptors_parser = cmd_parser.add_parser(
-        name="interceptors", help="Manage interceptors"
-    )
-    interceptors_subparsers = interceptors_parser.add_subparsers(
-        dest="action", help="Manage interceptors actions"
-    )
-    set_interceptors_actions_parsers(interceptors_subparsers)
 
     plugins_parser = cmd_parser.add_parser(name="plugins", help="Manage plugins")
     plugins_subparsers = plugins_parser.add_subparsers(

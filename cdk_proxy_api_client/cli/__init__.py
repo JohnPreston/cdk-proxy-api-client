@@ -20,6 +20,7 @@ from requests import Response
 
 from cdk_proxy_api_client.cli.main_parser import set_parser
 from cdk_proxy_api_client.common.logging import LOG
+from cdk_proxy_api_client.interceptors import Interceptors
 from cdk_proxy_api_client.plugins import Plugins
 from cdk_proxy_api_client.proxy_api import ApiClient, ProxyClient
 from cdk_proxy_api_client.tools import load_config_file
@@ -61,6 +62,8 @@ def vclusters_actions(proxy: ProxyClient, action: str, **kwargs):
         req = tenant_mappings_actions(
             proxy, vclusters, kwargs.pop("sub_action"), **kwargs
         )
+    elif action == "interceptors":
+        req = interceptors_actions(proxy, kwargs.pop("sub_action"), **kwargs)
     else:
         raise NotImplementedError(f"Action {action} not yet implemented.")
     return req
@@ -141,6 +144,35 @@ def plugins_actions(proxy: ProxyClient, action: str, **kwargs):
     else:
         raise NotImplementedError("Action {} is not implemented yet.".format(action))
     return req
+
+
+def interceptors_actions(proxy: ProxyClient, action: str, **kwargs):
+    """Triggers function according to CLI Input"""
+
+    _interceptor_client = Interceptors(proxy)
+    if action == "list":
+        return _interceptor_client.list_all_interceptors()
+    elif action == "create-update":
+        with open(kwargs["config"], "r") as config_fd:
+            config_raw = config_fd.read()
+            config_json = json.loads(config_raw)
+        _req = _interceptor_client.create_vcluster_interceptor(
+            vcluster_name=kwargs["vcluster_name"],
+            interceptor_name=config_json["name"],
+            plugin_class=config_json["pluginClass"],
+            priority=config_json["priority"],
+            config=config_json["config"],
+            username=set_else_none("vcluster_username", kwargs, None),
+        )
+        return _req
+    elif action == "delete":
+        _req = _interceptor_client.delete_vcluster_interceptor(
+            kwargs["vcluster_name"],
+            kwargs["interceptor_name"],
+            set_else_none("vcluster_username", kwargs, None),
+        )
+        return _req
+    return None
 
 
 def main():

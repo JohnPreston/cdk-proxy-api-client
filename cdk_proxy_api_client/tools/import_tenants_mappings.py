@@ -251,12 +251,14 @@ def propagate_tenant_mappings(
     ignore_conflicts: bool = False,
 ) -> None:
     for mapping in mappings:
+        print("MAPPINGS IMPORT", mapping)
         try:
             tenant_mappings.create_vcluster_topic_mapping(
                 tenant_name,
                 mapping["logicalTopicName"],
                 mapping["physicalTopicName"],
                 read_only=keyisset("readOnly", mapping),
+                concentrated=keyisset("concentrated", mapping),
             )
         except ProxyGenericException as error:
             if error.code == 409 and ignore_conflicts:

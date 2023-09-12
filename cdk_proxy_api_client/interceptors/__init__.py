@@ -103,7 +103,7 @@ class Interceptors(ApiApplication):
         }
         LOG.debug("list_vcluster_interceptors path: {}".format(_path))
         req = self.proxy.client.post(
-            _path, json=priority, headers=self.proxy.client.json_headers
+            _path, json=_payload, headers=self.proxy.client.json_headers
         )
         return req
 
