@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from argparse import ArgumentParser
 
-from .interceptors_parser import set_interceptors_actions_parsers
+from .vclusters_interceptors_subparser import set_interceptors_actions_parsers
 
 VCLUSTER_PARSER = ArgumentParser(add_help=False)
 VCLUSTER_PARSER.add_argument(

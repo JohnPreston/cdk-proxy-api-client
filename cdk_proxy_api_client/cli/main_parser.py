@@ -6,9 +6,6 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from os import environ
 
-from cdk_proxy_api_client.cli.interceptors_parser import (
-    set_interceptors_actions_parsers,
-)
 from cdk_proxy_api_client.cli.plugins_parser import set_plugings_actions_parsers
 from cdk_proxy_api_client.cli.vclusters_parser import set_vclusters_actions_parsers
 
