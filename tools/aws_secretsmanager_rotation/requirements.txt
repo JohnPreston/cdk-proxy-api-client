@@ -1,5 +1,0 @@
-pyyaml>=6.0
-boto3
-pyjwt
-cdk-proxy-api-client>=0.5.1
-compose-x-common>=1.3

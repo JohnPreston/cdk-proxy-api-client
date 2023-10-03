@@ -9,7 +9,6 @@ from urllib.parse import quote
 from requests import Response
 
 from cdk_proxy_api_client.common.logging import LOG
-from cdk_proxy_api_client.errors import GenericNotFound
 from cdk_proxy_api_client.proxy_api import ApiApplication
 
 
@@ -22,7 +21,7 @@ class Interceptors(ApiApplication):
         Path: /admin/interceptors/v1/interceptors
         """
         _path: str = f"{self.base_path}/interceptors"
-        LOG.debug("list_all_interceptors path: {}".format(_path))
+        LOG.debug(f"list_all_interceptors path: {_path}")
         req = self.proxy.client.get(_path)
         if as_list:
             return req.json()
@@ -47,7 +46,7 @@ class Interceptors(ApiApplication):
             )
         else:
             _path: str = f"{self.base_path}/vcluster/{vcluster_name}/interceptor/{quote(interceptor_name)}"
-        LOG.debug("get_vcluster_intereceptor_info path: {}".format(_path))
+        LOG.debug(f"get_vcluster_intereceptor_info path: {_path}")
         req = self.proxy.client.get(_path)
         if as_dict:
             return req.json()
@@ -67,7 +66,7 @@ class Interceptors(ApiApplication):
             )
         else:
             _path: str = f"{self.base_path}/vcluster/{vcluster_name}/interceptors"
-        LOG.debug("list_vcluster_interceptors path: {}".format(_path))
+        LOG.debug(f"list_vcluster_interceptors path: {_path}")
         req = self.proxy.client.get(_path)
         if as_list:
             return req.json()
@@ -101,7 +100,7 @@ class Interceptors(ApiApplication):
             "priority": priority,
             "config": config,
         }
-        LOG.debug("list_vcluster_interceptors path: {}".format(_path))
+        LOG.debug(f"list_vcluster_interceptors path: {_path}")
         req = self.proxy.client.post(
             _path, json=_payload, headers=self.proxy.client.json_headers
         )
@@ -127,13 +126,13 @@ class Interceptors(ApiApplication):
             )
         else:
             _path: str = f"{self.base_path}/vcluster/{vcluster_name}/interceptor/{quote(interceptor_name)}"
-        LOG.debug("update_vcluster_interceptor path: {}".format(_path))
+        LOG.debug(f"update_vcluster_interceptor path: {_path}")
         _payload: dict = {
             "pluginClass": plugin_class,
             "priority": priority,
             "config": config,
         }
-        LOG.debug("list_vcluster_interceptors path: {}".format(_path))
+        LOG.debug(f"list_vcluster_interceptors path: {_path}")
         req = self.proxy.client.put(
             _path, json=priority, headers=self.proxy.client.json_headers
         )
@@ -153,6 +152,6 @@ class Interceptors(ApiApplication):
             )
         else:
             _path: str = f"{self.base_path}/vcluster/{vcluster_name}/interceptor/{quote(interceptor_name)}"
-        LOG.debug("update_vcluster_interceptor path: {}".format(_path))
+        LOG.debug(f"update_vcluster_interceptor path: {_path}")
         req = self.proxy.client.delete(_path)
         return req

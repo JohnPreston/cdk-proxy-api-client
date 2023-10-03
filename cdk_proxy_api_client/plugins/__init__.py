@@ -4,12 +4,10 @@
 from __future__ import annotations
 
 from typing import Union
-from urllib.parse import quote
 
 from requests import Response
 
 from cdk_proxy_api_client.common.logging import LOG
-from cdk_proxy_api_client.errors import GenericNotFound
 from cdk_proxy_api_client.proxy_api import ApiApplication
 
 
@@ -29,7 +27,7 @@ class Plugins(ApiApplication):
         if extended:
             _path = f"{self.base_path}/extended"
 
-        LOG.debug("list_all_plugins path: {}".format(_path))
+        LOG.debug(f"list_all_plugins path: {_path}")
         req = self.proxy.client.get(_path)
         if as_list:
             return req.json()["plugins"]
