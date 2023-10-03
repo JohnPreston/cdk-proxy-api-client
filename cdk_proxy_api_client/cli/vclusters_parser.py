@@ -63,9 +63,28 @@ def set_vcluster_mappings_actions(vclusters_subparsers):
         parents=[VCLUSTER_PARSER],
     )
     mappings_subparsers = mappings_parser.add_subparsers(dest="sub_action")
-    mappings_subparsers.add_parser(
+    list_parser = mappings_subparsers.add_parser(
         name="list",
         help="List vCluster mappings",
+    )
+    list_parser.add_argument(
+        "--no-concentrated",
+        action="store_true",
+        help="Excludes concentrated topics from list",
+        dest="no_concentrated",
+        required=False,
+    )
+    list_parser.add_argument(
+        "--mapped-only",
+        action="store_true",
+        help="Excludes concentrated topics & topics starting with the vcluster name",
+        dest="mapped_only",
+        required=False,
+    )
+    list_parser.add_argument(
+        "--as-import-config",
+        action="store_true",
+        help="Returns the equivalent output to use with import-from-config",
     )
     create_parser = mappings_subparsers.add_parser(
         name="create",

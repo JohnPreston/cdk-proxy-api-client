@@ -2,7 +2,7 @@
 #   Copyright 2023 John Mille <john@ews-network.net>
 
 from __future__ import annotations
-
+from typing import Union
 import json
 import logging
 import sys
@@ -43,11 +43,34 @@ def format_return(function):
             try:
                 return req.json()
             except Exception as error:
+                print("request response not in JSON")
                 print(error)
                 return req.text
         return req
 
     return wrapped_answer
+
+
+def format_vcluster_mappings_list(
+    vcluster_name: str, req: list, options: dict
+) -> Union[dict, list]:
+    """Parses options to manipulate the returned list/dict"""
+    mappings_list: list = []
+    for _mapping in req:
+        if keyisset("no_concentrated", options):
+            if not keyisset("concentrated", _mapping):
+                mappings_list.append(_mapping)
+        elif keyisset("mapped_only", options):
+            if not (
+                keyisset("concentrated", _mapping)
+                or _mapping["physicalTopicName"].startswith(vcluster_name)
+            ):
+                mappings_list.append(_mapping)
+        else:
+            mappings_list.append(_mapping)
+    if keyisset("as_import_config", options):
+        return {"tenant": vcluster_name, "mappings": mappings_list}
+    return mappings_list
 
 
 @format_return
@@ -86,8 +109,7 @@ def auth_actions(vcluster: VirturalClusters, action: str, **kwargs):
         return """security.protocol=SASL_SSL
 sasl.mechanism=PLAIN
 sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="{}" password="{}";
-client.id=CLI_{}
-        """.format(
+client.id=CLI_{}""".format(
             username, req["token"], username
         )
     return req
@@ -100,7 +122,11 @@ def tenant_mappings_actions(
 
     vcluster_name = set_else_none("vcluster_name", kwargs)
     if action == "list":
-        req = vcluster.list_vcluster_topic_mappings(vcluster_name).json()
+        req = format_vcluster_mappings_list(
+            vcluster_name,
+            vcluster.list_vcluster_topic_mappings(vcluster_name).json(),
+            kwargs,
+        )
     elif action == "import-from-vclusters-config":
         content = load_config_file(path.abspath(kwargs["import_config_file"]))
         req = import_tenants_mappings(proxy, content, vcluster_name)
