@@ -3,17 +3,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from cdk_proxy_api_client.client_wrapper import ApiClient
-from cdk_proxy_api_client.common.logging import LOG
 
 if TYPE_CHECKING:
-    from requests import Response
+    pass
 
 
 class ProxyClient:
-    version: str = "v1beta1"
+    version: str = "v1"
 
     def __init__(self, client: ApiClient):
         self._client = client
@@ -41,15 +40,3 @@ class ApiApplication:
     @property
     def base_path(self) -> str:
         return f"/{self.app_path}/{self.proxy.version}"
-
-
-class Multitenancy(ApiApplication):
-    app_path: str = "admin/multitenancy"
-
-    def list_tenants(self, as_list: bool = False) -> Union[Response, list[str]]:
-        _path: str = f"{self.base_path}/tenants"
-        LOG.debug(f"list_tenants path {_path}")
-        req = self.proxy.client.get(_path, headers={"Accept": "application/json"})
-        if as_list:
-            return req.json()["tenants"]
-        return req
