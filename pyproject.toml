@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "cdk-proxy-api-client"
 description = "Conduktor Proxy API Client"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["John \"Preston\" Mille <john@ews-network.net>"]
 readme = "README.md"
 license = "LICENSE"
@@ -45,7 +45,7 @@ tbump = "^6.9.0"
 github_url = "https://codeberg.org/JohnPreston/cdk-proxy-api-client"
 
 [tool.tbump.version]
-current = "0.6.1"
+current = "0.6.2"
 regex = '''
   (?P<major>\d+)
   \.
