@@ -43,7 +43,7 @@ class VirturalClusters(ApiApplication):
             username = vcluster
         payload = {"lifeTimeSeconds": lifetime_in_seconds}
         _path: str = f"{self.base_path}/vcluster/{vcluster}/username/{username}"
-        LOG.debug("create_vcluster_user_token path {}".format(_path))
+        LOG.debug(f"create_vcluster_user_token path {_path}")
         req = self.proxy.client.post(
             _path, headers={"Accept": "application/json"}, json=payload
         )
@@ -74,12 +74,11 @@ class VirturalClusters(ApiApplication):
         }
         if cluster_id:
             payload["clusterId"] = cluster_id
-        print(payload)
         if payload["concentrated"] and payload["readOnly"]:
             raise ValueError(
-                "{} - concentrated is true, read_only cannot be true.".format(_path)
+                f"{_path} - concentrated is true, read_only cannot be true."
             )
-        LOG.debug("create_vcluster_topic_mapping path: {}".format(_path))
+        LOG.debug(f"create_vcluster_topic_mapping path: {_path}")
         req = self.proxy.client.post(_path, json=payload)
         return req
 
@@ -91,7 +90,7 @@ class VirturalClusters(ApiApplication):
         Path: /admin/vclusters/v1/vcluster/{vcluster}/topics
         """
         _path = f"{self.base_path}/vcluster/{vcluster}/topics"
-        LOG.debug("list_vcluster_topic_mappings path: {}".format(_path))
+        LOG.debug(f"list_vcluster_topic_mappings path: {_path}")
         try:
             req = self.proxy.client.get(_path, headers={"Accept": "application/json"})
             if as_list:
