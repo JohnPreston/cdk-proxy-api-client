@@ -13,7 +13,7 @@ class UserMappings(ApiApplication):
     https://developers.conduktor.io/#tag/User-mappings
     """
 
-    app_path: str = "admin/userMappings/v1"
+    app_path: str = "admin/userMappings"
 
     def create_mapping(self, vcluster: str, username: str) -> Response:
         """
