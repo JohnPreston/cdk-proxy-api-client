@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "cdk-proxy-api-client"
 description = "Conduktor Proxy API Client"
-version = "0.2.4"
+version = "0.6.2"
 authors = ["John \"Preston\" Mille <john@ews-network.net>"]
 readme = "README.md"
 license = "LICENSE"
-packages = [{include = "cdk_proxy_api_client"}]
-keywords = ["compose-x", "conduktor", "kafka", "proxy"]
+packages = [{ include = "cdk_proxy_api_client" }]
+keywords = ["conduktor", "kafka", "proxy"]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
@@ -17,10 +17,7 @@ classifiers = [
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
-]
-
-include = [
-    "cdk_proxy_api_client/**/*.json",
+  "Programming Language :: Python :: 3.11",
 ]
 
 exclude = ["*.pyc", "*~", "*pycache*"]
@@ -29,38 +26,26 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 "Bug Tracker" = "https://github.com/JohnPreston/cdk-proxy-api-client/issues"
 "Source (GitHub)" = "https://github.com/JohnPreston/cdk-proxy-api-client"
 "Source (CodeBerg)" = "https://codeberg.org/JohnPreston/cdk-proxy-api-client"
+"CLI & Tools" = "https://github.com/johnpreston/cdk-gw-tools"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-requests = "^2.28.2"
-jsonschema = {version = "^4.17.3", optional = true }
-compose-x-common = {version = "^1.2", optional = true }
-importlib-resources = {version = "^5.12.0", optional = true }
-pyyaml = "^6.0"
+requests = "^2.31"
+pyjwt = "^2.8"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.1.1"
-black = "^23.1.0"
-isort = "^5.12.0"
-openapi-python-client = "^0.13.1"
-datamodel-code-generator = "^0.17.1"
+black = "^23.9"
+isort = "^5.12"
 pyupgrade = "^3.3.1"
 pydantic = "^1.10.5"
 tbump = "^6.9.0"
-
-[tool.poetry.extras]
-tools = ["compose-x-common", "importlib-resources", "jsonschema"]
-cli = ["compose-x-common", "importlib-resources", "jsonschema"]
-
-[tool.poetry.scripts]
-cdk-cli = "cdk_proxy_api_client.cli:main"
-
 
 [tool.tbump]
 github_url = "https://codeberg.org/JohnPreston/cdk-proxy-api-client"
 
 [tool.tbump.version]
-current = "0.2.4"
+current = "0.6.2"
 regex = '''
   (?P<major>\d+)
   \.
