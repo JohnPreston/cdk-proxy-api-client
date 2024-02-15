@@ -25,7 +25,6 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/JohnPreston/cdk-proxy-api-client/issues"
 "Source (GitHub)" = "https://github.com/JohnPreston/cdk-proxy-api-client"
-"Source (CodeBerg)" = "https://codeberg.org/JohnPreston/cdk-proxy-api-client"
 "CLI & Tools" = "https://github.com/johnpreston/cdk-gw-tools"
 
 [tool.poetry.dependencies]
