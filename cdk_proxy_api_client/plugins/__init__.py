@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2023 John Mille <john@ews-network.net>
+# Copyright 2024 John Mille <john@ews-network.net>
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ class Plugins(ApiApplication):
 
     def list_all_plugins(
         self, extended: bool = False, as_list: bool = False
-    ) -> Union[Response, list]:
+    ) -> Response | list:
         """
         Docs: https://developers.conduktor.io/#tag/Plugins/operation/Plugins_v1_getPlugins
         Path: /admin/plugins/v1
