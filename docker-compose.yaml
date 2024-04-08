@@ -63,7 +63,7 @@ services:
       test: curl --fail localhost:8888/health
       interval: 10s
       retries: 4
-      start_period: 15s
+      start_period: 5s
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0

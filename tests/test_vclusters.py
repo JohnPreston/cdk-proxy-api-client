@@ -8,7 +8,7 @@ import uuid
 from copy import deepcopy
 
 import pytest
-from confluent_kafka import Consumer, KafkaError, Producer
+from confluent_kafka import Consumer, KafkaError, KafkaException, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 
 from cdk_proxy_api_client.client_wrapper import ApiClient
@@ -24,7 +24,18 @@ def generate_random_string(length=10):
     return "".join(random.choice(letters) for _ in range(length))
 
 
-@pytest.fixture(scope="session")
+def on_delivery(err, msg):
+    if err:
+        print(f"Delivery failed for {msg.value()}: {err}")
+        raise KafkaException(err)
+
+
+@pytest.fixture()
+def messages() -> dict:
+    return {str(uuid.uuid4()): generate_random_string() for _ in range(1, 100)}
+
+
+@pytest.fixture()
 def proxy_client(base_url):
     return ProxyClient(ApiClient(url=base_url, username="admin", password="conduktor"))
 
@@ -52,7 +63,8 @@ def test_list_plugings(proxy_client, base_url):
     plugins = plugins_c.list_all_plugins()
 
 
-def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap):
+@pytest.mark.timeout(60)
+def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap, messages):
     vclusters_c = VirtualClusters(proxy_client)
     vclusters_l = vclusters_c.list_vclusters().json()["vclusters"]
     assert not vclusters_l
@@ -87,11 +99,22 @@ def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap):
     virt_admin_client = AdminClient(virt_client_config)
     virt_topics_list: list[str] = list(virt_admin_client.list_topics().topics.keys())
     assert not virt_topics_list
-    _return_values: dict = virt_admin_client.create_topics([NewTopic("simple_topic")])
+    with pytest.raises(KafkaException):
+        _return_values: dict = virt_admin_client.create_topics(
+            [NewTopic("simple_topic")]
+        )
+        for _future in _return_values.values():
+            while not _future.done():
+                if _future.exception():
+                    raise _future.exception()
+    _return_values: dict = virt_admin_client.create_topics(
+        [NewTopic("simple_topic", num_partitions=2)]
+    )
     for _future in _return_values.values():
         while not _future.done():
             if _future.exception():
                 raise _future.exception()
+
     virt_topics_list: list[str] = list(virt_admin_client.list_topics().topics.keys())
     assert "simple_topic" in virt_topics_list
 
@@ -112,21 +135,27 @@ def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap):
     ]
 
     virt_producer_config: dict = deepcopy(virt_client_config)
+    with pytest.raises(KafkaException):
+        virt_producer = Producer(virt_producer_config)
+        for key, value in messages.items():
+            virt_producer.produce(
+                "phy.simple-topic", value=value, key=key, on_delivery=on_delivery
+            )
+        virt_producer.poll(0.5)
+        virt_producer.flush()
     virt_producer_config.update(
         {
             "client.id": "producer_test",
-            "acks": "all",
-            "compression.type": "zstd",
-            "linger.ms": 200,
+            "acks": "-1",
+            "compression.codec": "gzip",
+            "linger.ms": 100,
         }
     )
-    virt_producer = Producer(virt_client_config)
-    messages: dict = {
-        str(uuid.uuid4()): generate_random_string() for _ in range(1, 100)
-    }
-
+    virt_producer = Producer(virt_producer_config)
     for key, value in messages.items():
-        virt_producer.produce("phy.simple-topic", value=value, key=key)
+        virt_producer.produce(
+            "phy.simple-topic", value=value, key=key, on_delivery=on_delivery
+        )
     virt_producer.poll(0.5)
     virt_producer.flush()
 
@@ -138,6 +167,7 @@ def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap):
             "enable.auto.commit": False,
         }
     )
+    print("VIRT - CONSUMING MESSAGES")
     virt_consumer = Consumer(virt_consumer_config)
     virt_consumer.subscribe(["phy.simple-topic"])
     consumed_messages: int = 0
@@ -155,6 +185,9 @@ def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap):
             msg.key().decode() in messages
             and msg.value().decode() == messages[msg.key().decode()]
         )
+        header_names = [_h[0] for _h in msg.headers()]
+        assert "X-GW-CLIENTID" in header_names
+        assert "X-GW-USER" not in header_names
         consumed_messages += 1
         if consumed_messages == len(messages.keys()):
             break
@@ -188,6 +221,9 @@ def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap):
             msg.key().decode() in messages
             and msg.value().decode() == messages[msg.key().decode()]
         )
+        header_names = [_h[0] for _h in msg.headers()]
+        assert "X-GW-CLIENTID" in header_names
+        assert "X-GW-USERID" in header_names
         consumed_messages += 1
         if consumed_messages == len(messages.keys()):
             break

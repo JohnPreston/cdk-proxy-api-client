@@ -50,13 +50,13 @@ class Interceptors(ApiApplication):
         if username and group_name:
             raise ValueError("username and group_name are mutually exclusive")
         if vcluster_name:
-            if username and not group_name:
+            if username:
                 _path: str = f"{self.base_path}/vcluster/{quote(vcluster_name)}/username/{quote(username)}/interceptor/{quote(interceptor_name)}"
-            elif not username and group_name:
+            elif group_name:
                 _path: str = f"{self.base_path}/vcluster/{quote(vcluster_name)}/group/{quote(group_name)}/interceptor/{quote(interceptor_name)}"
             else:
                 _path: str = f"{self.base_path}/vcluster/{quote(vcluster_name)}/interceptor/{quote(interceptor_name)}"
-            LOG.debug("vCluster interceptor path: %s" % _path)
+            LOG.info("vCluster interceptor path: %s" % _path)
             return _path
 
         if username:
@@ -95,15 +95,16 @@ class Interceptors(ApiApplication):
     def get_interceptor(
         self,
         interceptor_name,
+        is_global: bool = False,
         vcluster_name: str = None,
         username: str = None,
         group_name: str = None,
     ) -> Response | dict:
         _path = self.generate_interceptor_path(
-            interceptor_name, vcluster_name, username, group_name
+            interceptor_name, is_global, vcluster_name, username, group_name
         )
         LOG.debug(f"get_interceptor path: {_path}")
-        req = self.proxy.client.post(_path)
+        req = self.proxy.client.get(_path)
         return req
 
     def create_interceptor(
