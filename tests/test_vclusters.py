@@ -143,6 +143,7 @@ def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap, messa
             )
         virt_producer.poll(0.5)
         virt_producer.flush()
+    virt_producer = None
     virt_producer_config.update(
         {
             "client.id": "producer_test",
@@ -227,3 +228,21 @@ def test_simple_vcluster(proxy_client, kafka_bootstrap, gateway_bootstrap, messa
         consumed_messages += 1
         if consumed_messages == len(messages.keys()):
             break
+
+
+def test_the_rest(proxy_client):
+    vclusters_c = VirtualClusters(proxy_client)
+    vclusters_l = vclusters_c.list_vclusters(as_list=True)
+    assert isinstance(vclusters_l["vclusters"], list)
+    vclusters_c.create_vcluster_user_token(vcluster="nomansland")
+
+
+def test_delete_mappings(proxy_client):
+    vclusters_c = VirtualClusters(proxy_client)
+    vcluster_name: str = "testing"
+    vclusters_c.delete_vcluster_topic_mapping(vcluster_name, "phy.simple-topic")
+    vclusters_c.create_vcluster_topic_mapping(
+        vcluster_name, "phy", "simple_topic", read_only=True
+    )
+    vclusters_c.delete_vcluster_topics_mappings(vcluster_name)
+    assert not vclusters_c.list_vcluster_topic_mappings(vcluster_name).json()

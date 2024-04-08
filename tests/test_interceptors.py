@@ -4,21 +4,13 @@
 
 from __future__ import annotations
 
-import random
-import string
-import uuid
-from copy import deepcopy
+import json
 
 import pytest
-from confluent_kafka import Consumer, KafkaError, Producer
-from confluent_kafka.admin import AdminClient, NewTopic
 
 from cdk_proxy_api_client.client_wrapper import ApiClient
-from cdk_proxy_api_client.errors import GenericForbidden, GenericUnauthorized
 from cdk_proxy_api_client.interceptors import Interceptors
-from cdk_proxy_api_client.plugins import Plugins
 from cdk_proxy_api_client.proxy_api import ProxyClient
-from cdk_proxy_api_client.vclusters import VirtualClusters
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +21,7 @@ def interceptors() -> dict:
             "pluginClass": "io.conduktor.gateway.interceptor.safeguard.CreateTopicPolicyPlugin",
             "config": {
                 "topic": ".*",
-                "numPartition": {"min": 1, "max": 2, "action": "BLOCK"},
+                "numPartition": {"min": 1, "max": 6, "action": "BLOCK"},
                 "replicationFactor": {
                     "min": 1,
                     "max": 3,
@@ -144,4 +136,10 @@ def test_vcluster_interceptors(proxy_client, interceptors):
     resolve = interceptors_c.get_target_resolve(
         {"vcluster": "testing", "username": "admin_client"}
     ).json()
-    print(resolve)
+    print(json.dumps(resolve))
+
+
+def test_get_all_gw_interceptors(proxy_client):
+    interceptors_c = Interceptors(proxy_client)
+    interceptors_c.get_all_gw_interceptors()
+    print(json.dumps(interceptors_c.get_all_gw_interceptors().json()))

@@ -20,7 +20,7 @@ from cdk_proxy_api_client.proxy_api import ApiApplication
 class VirtualClusters(ApiApplication):
     app_path: str = "admin/vclusters"
 
-    def list_vclusters(self, as_list: bool = False) -> Response | list[str]:
+    def list_vclusters(self, as_list: bool = False) -> Response | dict:
         _path: str = f"{self.base_path}/"
         LOG.debug(f"list_vclusters path {_path}")
         req = self.proxy.client.get(_path, headers={"Accept": "application/json"})
@@ -95,12 +95,19 @@ class VirtualClusters(ApiApplication):
         )
         return req
 
-    def delete_concentration_rule(self, vcluster_name: str) -> Response:
+    def delete_concentration_rule(
+        self, vcluster_name: str, pattern: str = None
+    ) -> Response:
         """
         Docs: https://developers.conduktor.io/#tag/Virtual-Clusters/operation/ConcentrationRule_deleteConcentrationRule
         Path: /admin/vclusters/v1/vcluster/{vcluster}/concentration-rules
         """
-        _path: str = f"{self.base_path}/vcluster/{vcluster_name}/concentration-rules"
+        if pattern:
+            _path: str = f"{self.base_path}/vcluster/{vcluster_name}/concentration-rules?{quote(pattern)}"
+        else:
+            _path: str = (
+                f"{self.base_path}/vcluster/{vcluster_name}/concentration-rules"
+            )
         LOG.debug(f"delete_concentration_rule path {_path}")
         req = self.proxy.client.delete(
             _path,
