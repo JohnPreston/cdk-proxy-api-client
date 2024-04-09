@@ -33,6 +33,8 @@ services:
       GATEWAY_SECURITY_PROTOCOL: SASL_PLAINTEXT
       GATEWAY_FEATURE_FLAGS_ANALYTICS: false
       GATEWAY_ADMIN_API_USERS: '[{username: admin, password: conduktor, admin: true}, {username: readonly, password: conduktor, admin: false}]'
+      GATEWAY_PORT_START: 6969
+      GATEWAY_PORT_COUNT: 1
 
       LOG4J2_IO_CONDUKTOR_LEVEL: debug
       LOG4J2_IO_CONDUKTOR_PROXY_AUTHORIZATION_LEVEL: debug
@@ -56,8 +58,6 @@ services:
         condition: service_started
     ports:
       - 6969:6969
-      - 6970:6970
-      - 6971:6971
       - 8888:8888
     healthcheck:
       test: curl --fail localhost:8888/health

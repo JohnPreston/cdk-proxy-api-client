@@ -32,7 +32,7 @@ def gateway_bootstrap():
     bootstrap: str = ",".join(
         [
             f"localhost:{docker_compose.get_service_port('gateway', port)}"
-            for port in [6969, 6970, 6971]
+            for port in [6969]
         ]
     )
     return bootstrap
