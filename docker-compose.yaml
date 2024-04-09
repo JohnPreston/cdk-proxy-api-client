@@ -1,10 +1,24 @@
 ---
 # Docker compose
+volumes:
+  kraft_data:
 services:
+  init:
+    image: busybox
+    volumes:
+      - kraft_data:/data
+    user: 0:0
+    command: chown -R 1000:1000 /data
+
   broker:
     image: apache/kafka:3.7.0
+    depends_on:
+      init:
+        condition: service_completed_successfully
     hostname: broker
     container_name: broker
+    volumes:
+       - kraft_data:/data
     ports:
       - "9092:9092"
     environment:
@@ -21,7 +35,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      KAFKA_LOG_DIRS: '/data'
 
   gateway:
     image: conduktor/conduktor-gateway:3.0.0

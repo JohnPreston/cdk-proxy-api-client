@@ -131,3 +131,15 @@ class UserMappings(ApiApplication):
             _path: str = self.base_path
         req = self.proxy.client.get(_path)
         return req
+
+    def list_mappings_detailed(self, vcluster_name: str = None) -> list[dict]:
+        """
+        Given the list of mappings only returns the usernames, we might want the full picture
+        about the identity.
+        For each username, retrieve the whole identity.
+        """
+        usernames: list[str] = self.list_mappings(vcluster_name=vcluster_name).json()
+        identities: list[dict] = []
+        for username in usernames:
+            identities.append(self.get_user_mapping(username, vcluster_name).json())
+        return identities
