@@ -1,16 +1,17 @@
 #   SPDX-License-Identifier: Apache-2.0
-#   Copyright 2023 John Mille <john@ews-network.net>
+#   Copyright 2024 John Mille <john@ews-network.net>
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
+
+import requests
 
 if TYPE_CHECKING:
     from requests import Response
 
 import re
 
-from requests import delete, get, post, put
 from requests.auth import HTTPBasicAuth
 
 from .errors import evaluate_api_return
@@ -33,6 +34,7 @@ class ApiClient:
         ignore_ssl_errors: bool = False,
         username: str = None,
         password: str = None,
+        session: requests.session = None,
     ):
         """
 
@@ -57,6 +59,8 @@ class ApiClient:
         self.protocol = protocol
         self.port = port
         self.url = url
+        if session is None:
+            self.session = requests.session()
 
     def __repr__(self):
         return self.url
@@ -68,7 +72,7 @@ class ApiClient:
         return not self._ignore_ssl_errors
 
     @property
-    def basic_auth(self) -> Union[HTTPBasicAuth, None]:
+    def basic_auth(self) -> HTTPBasicAuth | None:
         """Returns basic auth information. If both the username and password are not set, raises AttributeError"""
         if self.username and self.password:
             return HTTPBasicAuth(self.username, self.password)
@@ -95,7 +99,7 @@ class ApiClient:
             )
 
     @url.setter
-    def url(self, value: Union[str, None]):
+    def url(self, value: str | None):
         if value is None:
             return
         if re.match(r"^https://(.*)$", value):
@@ -112,7 +116,7 @@ class ApiClient:
         return "http"
 
     @protocol.setter
-    def protocol(self, value: Union[str, None]) -> None:
+    def protocol(self, value: str | None) -> None:
         if value is None:
             return
         valid_values: list = ["http", "https", "HTTP", "HTTPS"]
@@ -127,7 +131,7 @@ class ApiClient:
         return 80
 
     @port.setter
-    def port(self, value: Union[int, None]) -> None:
+    def port(self, value: int | None) -> None:
         if value is None and self.protocol == "http":
             value = 80
         elif value is None and self.protocol == "https":
@@ -146,7 +150,9 @@ class ApiClient:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = get(url, auth=self.basic_auth, verify=self.verify_ssl, **kwargs)
+        req = self.session.get(
+            url, auth=self.basic_auth, verify=self.verify_ssl, **kwargs
+        )
         return req
 
     @evaluate_api_return
@@ -154,7 +160,7 @@ class ApiClient:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = post(
+        req = self.session.post(
             url,
             auth=self.basic_auth,
             verify=self.verify_ssl,
@@ -167,7 +173,7 @@ class ApiClient:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = put(
+        req = self.session.put(
             url,
             auth=self.basic_auth,
             verify=self.verify_ssl,
@@ -180,5 +186,7 @@ class ApiClient:
         if not query_path.startswith(r"/"):
             query_path = f"/{query_path}"
         url = f"{self.url}{query_path}"
-        req = delete(url, auth=self.basic_auth, verify=self.verify_ssl, **kwargs)
+        req = self.session.delete(
+            url, auth=self.basic_auth, verify=self.verify_ssl, **kwargs
+        )
         return req
